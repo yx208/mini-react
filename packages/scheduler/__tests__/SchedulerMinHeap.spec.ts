@@ -8,15 +8,15 @@ describe("test min heap", () => {
 
     function createHeap() {
         let heap = new SchedulerMinHeap();
-        heap.push({ id: 3, sortIndex: 3 });
-        heap.push({ id: 7, sortIndex: 7 });
-        heap.push({ id: 4, sortIndex: 4 });
-        heap.push({ id: 10, sortIndex: 10 });
-        heap.push({ id: 12, sortIndex: 12 });
-        heap.push({ id: 9, sortIndex: 9 });
-        heap.push({ id: 6, sortIndex: 6 });
-        heap.push({ id: 15, sortIndex: 15 });
-        heap.push({ id: 14, sortIndex: 14 });
+        heap.push(createNode(3));
+        heap.push(createNode(7));
+        heap.push(createNode(4));
+        heap.push(createNode(10));
+        heap.push(createNode(12));
+        heap.push(createNode(9));
+        heap.push(createNode(6));
+        heap.push(createNode(15));
+        heap.push(createNode(14));
 
         return heap;
     }
@@ -26,7 +26,7 @@ describe("test min heap", () => {
         expect(heap.peek()).toBe(null);
     });
 
-    it("heap pop and push", () => {
+    it("heap pop and push and clear", () => {
         const heap = createHeap();
         expect(heap.peek().sortIndex).toBe(3);
         heap.pop();
