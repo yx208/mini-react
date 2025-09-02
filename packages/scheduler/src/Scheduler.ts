@@ -1,7 +1,7 @@
-import {getCurrentTime} from "shared/utils";
-import {SchedulerMinHeap} from "./SchedulerMinHeap";
+import { getCurrentTime } from "shared/utils";
+import { SchedulerMinHeap } from "./SchedulerMinHeap";
 
-type TaskCallback = (isCallbackTimeout: boolean) => TaskCallback | null | undefined;
+type TaskCallback = (isCallbackTimeout: boolean) => TaskCallback | null | undefined | void;
 
 enum PriorityLevel {
     NoPriority,
@@ -48,18 +48,19 @@ let currentPriorityLevel: PriorityLevel = PriorityLevel.NoPriority;
 let startTime = -1;
 
 // 切片时间段
-let frameInterval = 5;
+const frameInterval = 5;
 
 // 主线程是否在调度
 let isHostCallbackScheduled = false;
 
+// 消息循环在运行否
+let isMessageLoopRunning = false;
+
 // 是否有 work 在执行
 let isPerformingWork = false;
 
-function cancelCallback() {
-    if (currentTask) {
-        currentTask.callback = null;
-    }
+function cancelCallback(task: Task) {
+    task.callback = null;
 }
 
 /**
@@ -71,10 +72,10 @@ function shouldYieldToHost() {
 
 /**
  * @param initialTime
- * @returns {boolean} - true: 任务没有执行完, false: 任务执行完毕
+ * @returns - true: 任务没有执行完, false: 任务执行完毕
  */
 function workLoop(initialTime: number) {
-    let currentTime = initialTime;
+    const currentTime = initialTime;
     currentTask = taskQueue.peek();
 
     while (currentTask !== null) {
@@ -122,21 +123,21 @@ function scheduleCallback(priorityLevel: PriorityLevel, callback: TaskCallback) 
 
     let timeout: number;
     switch (priorityLevel) {
-        case PriorityLevel.ImmediatePriority:
-            timeout = PriorityTimeout.IMMEDIATE_PRIORITY_TIMEOUT;
-            break;
-        case PriorityLevel.UserBlockingPriority:
-            timeout = PriorityTimeout.USER_BLOCKING_PRIORITY_TIMEOUT;
-            break;
-        case PriorityLevel.LowPriority:
-            timeout = PriorityTimeout.LOW_PRIORITY_TIMEOUT;
-            break;
-        case PriorityLevel.IdlePriority:
-            timeout = PriorityTimeout.IDLE_PRIORITY_TIMEOUT;
-            break;
-        default:
-            timeout = PriorityTimeout.NORMAL_PRIORITY_TIMEOUT;
-            break;
+    case PriorityLevel.ImmediatePriority:
+        timeout = PriorityTimeout.IMMEDIATE_PRIORITY_TIMEOUT;
+        break;
+    case PriorityLevel.UserBlockingPriority:
+        timeout = PriorityTimeout.USER_BLOCKING_PRIORITY_TIMEOUT;
+        break;
+    case PriorityLevel.LowPriority:
+        timeout = PriorityTimeout.LOW_PRIORITY_TIMEOUT;
+        break;
+    case PriorityLevel.IdlePriority:
+        timeout = PriorityTimeout.IDLE_PRIORITY_TIMEOUT;
+        break;
+    default:
+        timeout = PriorityTimeout.NORMAL_PRIORITY_TIMEOUT;
+        break;
     }
 
     const expirationTime = startTime + timeout;
@@ -154,9 +155,64 @@ function scheduleCallback(priorityLevel: PriorityLevel, callback: TaskCallback) 
         isHostCallbackScheduled = true;
         requestHostCallback();
     }
+
+    return task;
 }
 
+/**
+ * 在浏览器空闲时间安排和执行任务
+ */
 function requestHostCallback() {
+    if (!isMessageLoopRunning) {
+        isMessageLoopRunning = true;
+        schedulePerformWorkUntilDeadline();
+    }
+}
 
+// 通过 MessageChannel 创建宏任务
+const channel = new global.MessageChannel();
+const port = channel.port2;
+channel.port1.onmessage = performWorkUntilDeadline;
+
+function schedulePerformWorkUntilDeadline() {
+    port.postMessage(null);
+}
+
+// 处理 Channel 宏任务触发
+function performWorkUntilDeadline() {
+    const currentTime = getCurrentTime();
+    startTime = currentTime;
+
+    let hasMoreWork = true;
+    try {
+        hasMoreWork = flushWork(currentTime);
+    } finally {
+        if (hasMoreWork) {
+            schedulePerformWorkUntilDeadline();
+        } else {
+            isMessageLoopRunning = false;
+        }
+    }
+}
+
+function flushWork(initialTime: number) {
+    isHostCallbackScheduled = false;
+    isPerformingWork = true;
+
+    const previousPriorityLevel = currentPriorityLevel;
+    try {
+        return workLoop(initialTime);
+    } finally {
+        currentTask = null;
+        isPerformingWork = false;
+        currentPriorityLevel = previousPriorityLevel;
+    }
+}
+
+export {
+    cancelCallback,
+    scheduleCallback,
+    startTime,
+    PriorityLevel,
 }
 

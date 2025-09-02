@@ -1,4 +1,4 @@
-import {describe, expect, it} from "vitest";
+import { describe, expect, it } from "vitest";
 import { Node, SchedulerMinHeap } from "../src/SchedulerMinHeap";
 
 describe("test min heap", () => {
@@ -7,7 +7,7 @@ describe("test min heap", () => {
     }
 
     function createHeap() {
-        let heap = new SchedulerMinHeap();
+        const heap = new SchedulerMinHeap();
         heap.push(createNode(3));
         heap.push(createNode(7));
         heap.push(createNode(4));
@@ -22,7 +22,7 @@ describe("test min heap", () => {
     }
 
     it("empty heap return null", () => {
-        let heap = new SchedulerMinHeap();
+        const heap = new SchedulerMinHeap();
         expect(heap.peek()).toBe(null);
     });
 
