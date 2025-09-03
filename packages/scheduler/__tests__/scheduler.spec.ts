@@ -23,31 +23,29 @@ describe("SchedulerBrowser", () => {
         const logArray = ["Message"];
         scheduleCallback(PriorityLevel.NormalPriority, () => {
             logArray.push("Task");
-            expect(logArray).toEqual(['Message', "Task"]);
         });
         expect(logArray).toEqual(['Message']);
         await waitForSchedule();
+        expect(logArray).toEqual(['Message', "Task"]);
     });
 
     it('multiple tasks', async () => {
         const logArray = ["Message"];
         scheduleCallback(PriorityLevel.NormalPriority, () => {
             logArray.push("Task");
-            expect(logArray).toEqual(['Message', "Task"]);
         });
         scheduleCallback(PriorityLevel.NormalPriority, () => {
             logArray.push("Task2");
-            expect(logArray).toEqual(['Message', "Task", "Task2"]);
         });
         expect(logArray).toEqual(['Message']);
         await waitForSchedule();
+        expect(logArray).toEqual(['Message', "Task", "Task2"]);
     });
 
     it('cancels tasks', async () => {
         const logArray = ["Message"];
         const task = scheduleCallback(PriorityLevel.NormalPriority, () => {
             logArray.push("Task");
-            expect(logArray).toEqual(["Message", "Task"]);
         });
         cancelCallback(task);
         expect(logArray).toEqual(["Message"]);

@@ -38,9 +38,18 @@ export type Task = {
     sortIndex: number;
 }
 
+// 立即执行的任务
 const taskQueue = new SchedulerMinHeap<Task>();
+// 延迟执行的任务
+const timerQueue = new SchedulerMinHeap<Task>();
 
+// const scheduleStats = {};
+
+// 增长的任务 id
 let taskIdCounter = 1;
+// 延时任务定时器 ID
+let taskTimeoutID: number = -1;
+// 当前正在执行的任务
 let currentTask: Task | null = null;
 let currentPriorityLevel: PriorityLevel = PriorityLevel.NoPriority;
 
@@ -50,8 +59,10 @@ let startTime = -1;
 // 切片时间段
 const frameInterval = 5;
 
-// 主线程是否在调度
+// 主线程是否在调度普通任务
 let isHostCallbackScheduled = false;
+// 主线程是否有其他延时任务在执行了
+let isHostTimeoutScheduled = false;
 
 // 消息循环在运行否
 let isMessageLoopRunning = false;
@@ -61,6 +72,11 @@ let isPerformingWork = false;
 
 function cancelCallback(task: Task) {
     task.callback = null;
+}
+
+function cancelHostTimeout() {
+    clearTimeout(taskTimeoutID);
+    taskTimeoutID = -1;
 }
 
 /**
@@ -75,7 +91,11 @@ function shouldYieldToHost() {
  * @returns - true: 任务没有执行完, false: 任务执行完毕
  */
 function workLoop(initialTime: number) {
-    const currentTime = initialTime;
+    let currentTime = initialTime;
+
+    // 检查是否有延时任务需要插入队列
+    advanceTimers(currentTime);
+
     currentTask = taskQueue.peek();
 
     while (currentTask !== null) {
@@ -99,14 +119,20 @@ function workLoop(initialTime: number) {
             const didUserCallbackTimeout = currentTask.expirationTime <= currentTime;
             // 任务未执行完成会返回个回调
             const continuationCallback = callback(didUserCallbackTimeout);
+
+            // 执行完任务回调，更新当前时间
+            currentTime = getCurrentTime();
+
             if (typeof continuationCallback === "function") {
                 currentTask.callback = continuationCallback;
-                return true;
             } else {
                 if (currentTask === taskQueue.peek()) {
                     taskQueue.pop();
                 }
             }
+
+            // 检查是否有延时任务需要插入队列
+            advanceTimers(currentTime);
         } else {
             taskQueue.pop();
         }
@@ -114,12 +140,29 @@ function workLoop(initialTime: number) {
         currentTask = taskQueue.peek();
     }
 
-    // 经过 while 之后还有任务?
-    return currentTask !== null;
+    if (currentTask !== null) {
+        return true;
+    } else {
+        // 线程空闲，检查其他优先级任务
+        const firstTimer = timerQueue.peek();
+        if (firstTimer !== null) {
+            requestHostTimeout(handleTimeout, firstTimer.startTime - currentTime);
+        }
+        return false;
+    }
 }
 
-function scheduleCallback(priorityLevel: PriorityLevel, callback: TaskCallback) {
-    const startTime = getCurrentTime();
+function scheduleCallback(
+    priorityLevel: PriorityLevel,
+    callback: TaskCallback,
+    options?: { delay: number }
+) {
+    const currentTime = getCurrentTime();
+    let startTime = currentTime;
+
+    if (typeof options?.delay === "number") {
+        startTime = currentTime + options.delay;
+    }
 
     let timeout: number;
     switch (priorityLevel) {
@@ -141,22 +184,95 @@ function scheduleCallback(priorityLevel: PriorityLevel, callback: TaskCallback) 
     }
 
     const expirationTime = startTime + timeout;
-    const task: Task = {
+    const newTask: Task = {
         id: taskIdCounter++,
         callback,
         priorityLevel,
         startTime,
         expirationTime,
-        sortIndex: expirationTime,
+        sortIndex: -1,
     };
-    taskQueue.push(task);
 
-    if (!isHostCallbackScheduled && !isPerformingWork) {
-        isHostCallbackScheduled = true;
-        requestHostCallback();
+    if (startTime > currentTime) {
+        // 延时任务在到达开始时间之后，添加到普通任务队列执行
+        // 所以延时任务的的排序应以开始时间为基准
+        newTask.sortIndex = startTime;
+        timerQueue.push(newTask);
+
+        // 高优先级的立即执行任务能够得到优先处理，并且有没有其他定时任务在执行
+        // 当 timerQueue.push 之后会进行优先级排序，单线程任务调度只需要调度最优先要得到处理的任务即可
+        // 当添加的任务是最高优先级的延时任务，则进行调度
+        if (taskQueue.peek() === null && newTask === timerQueue.peek()) {
+            // 如果当前任务是最高优先级，但有其他任务在进行调度，则取消之前的
+            if (isHostTimeoutScheduled) {
+                cancelHostTimeout();
+            } else {
+                isHostTimeoutScheduled = true;
+            }
+            requestHostTimeout(handleTimeout, startTime - currentTime);
+        }
+    } else {
+        newTask.sortIndex = expirationTime;
+        taskQueue.push(newTask);
+
+        if (!isHostCallbackScheduled && !isPerformingWork) {
+            isHostCallbackScheduled = true;
+            requestHostCallback();
+        }
     }
 
-    return task;
+    return newTask;
+}
+
+function requestHostTimeout(callback: (time: number) => void, ms: number) {
+    taskTimeoutID = setTimeout(() => {
+        callback(getCurrentTime());
+    }, ms) as unknown as number;
+}
+
+/**
+ * 延时任务到期回调
+ */
+function handleTimeout(currentTime: number) {
+    isHostTimeoutScheduled = false;
+    advanceTimers(currentTime);
+
+    // 延时队列推送立即执行队列完了之后，如果主线程有空闲则立即执行
+    if (!isHostCallbackScheduled) {
+        // 有可执行任务
+        if (taskQueue.peek() !== null) {
+            isHostCallbackScheduled = true;
+            requestHostCallback();
+        } else {
+            // 其他优先级批次的任务
+            const firstTimer = timerQueue.peek();
+            if (firstTimer !== null) {
+                requestHostTimeout(handleTimeout, firstTimer.startTime - currentTime);
+            }
+        }
+    }
+}
+
+/**
+ * 把当前优先级批次的任务，从延时队列添加到立即执行队列
+ */
+function advanceTimers(currentTime: number) {
+    let timer = timerQueue.peek();
+    while (timer !== null) {
+        if (timer.callback === null) {
+            timerQueue.pop();
+        } else if (timer.startTime <= currentTime) {
+            // 任务时间就绪，可以执行
+            timerQueue.pop();
+            timer.sortIndex = timer.expirationTime;
+            taskQueue.push(timer);
+        } else {
+            return;
+        }
+
+        // 查看下一个是否还可以执行，即有一批任务是相同优先级的延时任务
+        timer = timerQueue.peek();
+    }
 }
 
 /**
@@ -211,6 +327,7 @@ function flushWork(initialTime: number) {
 
 export {
     cancelCallback,
+    cancelHostTimeout,
     scheduleCallback,
     startTime,
     PriorityLevel,
