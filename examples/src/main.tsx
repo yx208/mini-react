@@ -1,10 +1,10 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './App.tsx'
+import { ReactDOM } from "../which-react";
+import './index.css';
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-)
+const jsx = (
+    <div className="outer">
+        <div className="inner">Hello world</div>
+    </div>
+);
+
+ReactDOM.createRoot(document.getElementById('root')!).render(jsx as any)

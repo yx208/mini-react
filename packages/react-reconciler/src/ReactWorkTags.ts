@@ -1,0 +1,27 @@
+export enum WorkTag {
+    FunctionComponent,
+    ClassComponent,
+    IndeterminateComponent, //在我们知道它是否是函数或之前，
+    HostRoot, // Root of a host tree. Could be nested inside another,
+    HostPortal, // A subtree. Could be an entry point to a different ren,
+    HostComponent,
+    HostTex,
+    Fragment,
+    Mod,
+    ContextConsume,
+    ContextProvider,
+    ForwardRef,
+    Profiler,
+    SuspenseComponent,
+    MemoComponent,
+    SimpleMemoComponent,
+    LazyComponent,
+    IncompleteClassComponent,
+    DehydratedFragment,
+    SuspenseListComponent,
+    ScopeComponent,
+    OffscreenComponent,
+    LegacyHiddenComponent,
+    CacheComponent,
+    TracingMarkerComponent
+}

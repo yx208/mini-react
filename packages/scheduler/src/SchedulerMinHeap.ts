@@ -11,7 +11,7 @@ export class SchedulerMinHeap<T extends Node> {
     }
 
     push(node: T) {
-        let index = this.heap.length;
+        const index = this.heap.length;
         this.heap.push(node);
         this.siftUp(node, index);
     }
