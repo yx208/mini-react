@@ -40,9 +40,7 @@ export function scheduleUpdateOnFiber(root: FiberRoot, fiber: Fiber) {
  * 4 对于并发任务，通过 Scheduler 调度，支持时间切片（Time Slicing），让浏览器有机会处理用户输入和其他高优先级任务
  * 5 无论是 setState、forceUpdate 还是其他触发更新的方式，最终都会调用这个函数，提供了一个统一的调度管理点
  */
-function ensureRootIsScheduled(root: FiberRoot, currentTime: number) {
-    console.log("ensureRootIsScheduled", currentTime);
-
+function ensureRootIsScheduled(root: FiberRoot, _currentTime: number) {
     queueMicrotask(() => {
         scheduleTaskForRootDuringMicrotask(root);
     });
@@ -96,11 +94,12 @@ function prepareFreshStack(root: FiberRoot) {
 }
 
 function workLoopSync() {
+    // 已经超时了，所以执行工作时不检查是否需要让出控制权
     while (workInProgress !== null) {
         performUnitOfWork(workInProgress);
     }
 }
 
-function performUnitOfWork(fiber: Fiber) {
-
+function performUnitOfWork(unitOfWork: Fiber) {
+    console.log(unitOfWork);
 }
