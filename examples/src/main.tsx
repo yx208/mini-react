@@ -7,4 +7,6 @@ const jsx = (
     </div>
 );
 
-ReactDOM.createRoot(document.getElementById('root')!).render(jsx as any)
+ReactDOM
+    .createRoot(document.getElementById('root')!)
+    .render(jsx as any)

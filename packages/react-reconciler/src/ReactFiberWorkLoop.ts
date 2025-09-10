@@ -2,8 +2,9 @@ import { getCurrentTime } from "shared/utils";
 import { PriorityLevel, scheduleCallback } from "scheduler";
 import type { Fiber, FiberRoot } from "./ReactInternalTypes";
 import { createWorkInProgress } from "./ReactFiber";
+import { beginWork } from "./ReactFiberBeginWork";
 
-export enum ExecutionContext {
+export const enum ExecutionContext {
     NoContext = 0b000,
     BatchedContext = 0b001,
     RenderContext = 0b010,
@@ -28,19 +29,10 @@ export function scheduleUpdateOnFiber(root: FiberRoot, fiber: Fiber) {
 }
 
 /**
- * 确保 React 的根节点（Root）有一个调度任务在执行或等待执行
- *
- * 如果某个任务已被安排，我们将检查现有任务的优先级，以确保其优先级与根节点正在处理的下一级任务的优先级相同
- * 每次更新时以及退出任务之前都会调用此函数
- *
- * 核心功能：
- * 1 React 18 引入了并发特性，不同更新有不同优先级（如用户输入优先级高于数据获取），ensureRootIsScheduled 确保高优先级任务能够打断低优先级任务
- * 2 通过检查现有的调度任务和优先级，避免为相同优先级的更新创建多个调度任务，提高性能
- * 3 多个更新可能在短时间内触发，这个函数会将它们合并到一个调度任务中，实现自动批处理
- * 4 对于并发任务，通过 Scheduler 调度，支持时间切片（Time Slicing），让浏览器有机会处理用户输入和其他高优先级任务
- * 5 无论是 setState、forceUpdate 还是其他触发更新的方式，最终都会调用这个函数，提供了一个统一的调度管理点
+ * 参见 README
  */
 function ensureRootIsScheduled(root: FiberRoot, _currentTime: number) {
+    // 插入微任务
     queueMicrotask(() => {
         scheduleTaskForRootDuringMicrotask(root);
     });
@@ -58,15 +50,19 @@ function scheduleTaskForRootDuringMicrotask(root: FiberRoot) {
  */
 function performConcurrentWorkOnRoot(root: FiberRoot) {
     // 1 render stage 构建 fiber 树
+    // 1.1 beginWork
+    // 1.2 completeWork
     renderRootSync(root);
+
     // 2 commit stage V-DOM 更新到 DOM
+    // commitRoot()
 }
 
 function renderRootSync(root: FiberRoot) {
     const prevExecutionContext = executionContext;
     executionContext |= ExecutionContext.RenderContext;
 
-    // 初始化
+    // 初始化 WIP 树，设置相关全局变量
     prepareFreshStack(root);
 
     // 遍历构建 Fiber 树
@@ -86,6 +82,7 @@ function prepareFreshStack(root: FiberRoot) {
 
     workInProgressRoot = root;
     // 根据 current Fiber 给当前 Root 创建 workInProgress Fiber
+    // 也就是创建当前要更新的 fiber，因为现在的 current 是旧的状态
     const rootWorkInProgress = createWorkInProgress(root.current, null);
     // 设置当前要工作的 Fiber 树
     workInProgress = rootWorkInProgress;
@@ -94,12 +91,70 @@ function prepareFreshStack(root: FiberRoot) {
 }
 
 function workLoopSync() {
-    // 已经超时了，所以执行工作时不检查是否需要让出控制权
+    // 同步，所以执行工作时不检查是否需要让出控制权
     while (workInProgress !== null) {
         performUnitOfWork(workInProgress);
     }
 }
 
+/**
+ * 执行某个 work（工作单元）
+ * @param unitOfWork - 正在调度的 Fiber
+ */
 function performUnitOfWork(unitOfWork: Fiber) {
-    console.log(unitOfWork);
+    // 当前，该 fiber 处于刷新状态，这是交替状态
+    // 理想情况下，不应该有任何东西依赖于它，但在这里依赖它意味着我们不需要在进行中的工作上添加额外的字段
+    const current = unitOfWork.alternate;
+
+    // beginWork
+    const next = beginWork(current, unitOfWork);
+    if (next === null) {
+        // 如果这没有生成新 work，则完成当前 work
+        completeUnitOfWork(unitOfWork);
+    } else {
+        workInProgress = next;
+    }
+
+    // finished
+}
+
+/**
+ * 从下到上遍历（深度优先遍历），完成节点工作并构建 effectList，构建的 effectList 将在 commit 阶段被使用
+ *
+ * 核心
+ * 1. 执行时机：当 beginWork 返回 null（表示没有子节点需要处理）时被调用
+ * 2. 主要职责：完成当前 Fiber 节点的收尾工作、构建 effectList（副作用链表）、决定下一个要处理的工作单元、处理错误边界
+ * 3. 遍历策略：采用后序遍历，从叶子节点开始向上回溯，处理兄弟节点和父节点
+ * 4. 性能优化：通过构建 effectList，避免在 commit 阶段遍历整个 Fiber 树，实现了空间换时间的优化
+ * 5. 可中断性: 在 Concurrent Mode 下支持中断和恢复，实现时间切片
+ */
+function completeUnitOfWork(unitOfWork: Fiber) {
+    let completedWork = unitOfWork;
+
+    do {
+        const current = unitOfWork.alternate;
+        const returnFiber = completedWork.return;
+
+        const next = completeWork(current, completedWork);
+        if (next !== null) {
+            workInProgress = next;
+            return;
+        }
+
+        const siblingFiber = completedWork.sibling;
+        if (siblingFiber !== null) {
+            workInProgress = siblingFiber;
+            return;
+        }
+
+        // 否则，返回到父级
+        completedWork = returnFiber;
+        // 更新我们正在处理的下一件事，以防万一
+        workInProgress = completedWork;
+    } while (completedWork !== null);
+}
+
+function completeWork(current: Fiber | null, workInProgress: Fiber): Fiber | null {
+    console.log(current, workInProgress);
+    return null;
 }

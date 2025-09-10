@@ -8,7 +8,8 @@
   },
   "files": [
     "utils.ts",
-    "ReactElementType.ts"
+    "ReactElementType.ts",
+    "ReactSymbols.ts"
   ],
   "keywords": [],
   "author": "",

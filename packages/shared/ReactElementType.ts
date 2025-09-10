@@ -1,5 +1,9 @@
 export type ReactElement = {
-    type: any;
-    key: any;
-    props: any;
-}
+    $$typeof: any,
+    type: any,
+    key: any,
+    ref: any,
+    props: any,
+    // ReactFiber
+    _owner: any,
+};

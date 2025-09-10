@@ -1,7 +1,12 @@
 import type { ReactNodeList } from "shared/ReactTypes";
 import { createFiberRoot, type FiberRoot, updateContainer } from "react-reconciler";
+import { HTMLNodeType } from "./HTMLNodeType";
 
 export function createRoot(container: Element | Document | DocumentFragment) {
+    if (!isValidContainer(container)) {
+        throw new Error('createRoot(...): Target container is not a DOM element.');
+    }
+
     const root = createFiberRoot(container);
     return new ReactDOMRoot(root);
 }
@@ -25,4 +30,14 @@ class ReactDOMRoot {
     unmount() {
 
     }
+}
+
+function isValidContainer(node: any) {
+    return !!(
+        node && (
+            node.nodeType === HTMLNodeType.ELEMENT_NODE ||
+            node.nodeType === HTMLNodeType.DOCUMENT_NODE ||
+            node.nodeType === HTMLNodeType.DOCUMENT_FRAGMENT_NODE
+        )
+    );
 }

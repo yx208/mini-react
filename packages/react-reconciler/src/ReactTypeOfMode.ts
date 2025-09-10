@@ -1,4 +1,4 @@
-export enum TypeOfMode {
+export const enum TypeOfMode {
     NoMode = /*                         */ 0b000000,
     // TODO: Remove ConcurrentMode by reading from the root tag instead
     ConcurrentMode = /*                 */ 0b000001,

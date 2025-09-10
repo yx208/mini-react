@@ -1,4 +1,4 @@
-export enum WorkTag {
+export const enum WorkTag {
     FunctionComponent,
     ClassComponent,
     IndeterminateComponent, //在我们知道它是否是函数或之前，
