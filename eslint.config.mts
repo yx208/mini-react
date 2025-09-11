@@ -21,6 +21,7 @@ export default defineConfig([
     pluginReact.configs.flat.recommended,
     {
         rules: {
+            semi: ["error", "always"],
             indent: ["error", 4, { SwitchCase: 1 }],
             "object-curly-spacing": ["error", "always"],
             "no-global-assign": ["error", { "exceptions": ["MessageChannel", "performance"] }],

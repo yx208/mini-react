@@ -24,7 +24,6 @@ let workInProgressRoot: FiberRoot | null = null;
 export function scheduleUpdateOnFiber(root: FiberRoot, fiber: Fiber) {
     workInProgress = fiber;
     workInProgressRoot = root;
-
     ensureRootIsScheduled(root, getCurrentTime());
 }
 
@@ -32,12 +31,15 @@ export function scheduleUpdateOnFiber(root: FiberRoot, fiber: Fiber) {
  * 参见 README
  */
 function ensureRootIsScheduled(root: FiberRoot, _currentTime: number) {
-    // 插入微任务
+    // 在微任务期间为 root 安排任务
     queueMicrotask(() => {
         scheduleTaskForRootDuringMicrotask(root);
     });
 }
 
+/**
+ * 在微任务期间为 root 安排任务
+ */
 function scheduleTaskForRootDuringMicrotask(root: FiberRoot) {
     scheduleCallback(
         PriorityLevel.NormalPriority,
@@ -46,6 +48,7 @@ function scheduleTaskForRootDuringMicrotask(root: FiberRoot) {
 }
 
 /**
+ * 在 root 上执行并发工作
  * 这是每个并发任务的入口点，即通过 Scheduler 的任何任务。
  */
 function performConcurrentWorkOnRoot(root: FiberRoot) {
@@ -53,6 +56,8 @@ function performConcurrentWorkOnRoot(root: FiberRoot) {
     // 1.1 beginWork
     // 1.2 completeWork
     renderRootSync(root);
+
+    console.log(root);
 
     // 2 commit stage V-DOM 更新到 DOM
     // commitRoot()
@@ -155,6 +160,5 @@ function completeUnitOfWork(unitOfWork: Fiber) {
 }
 
 function completeWork(current: Fiber | null, workInProgress: Fiber): Fiber | null {
-    console.log(current, workInProgress);
     return null;
 }

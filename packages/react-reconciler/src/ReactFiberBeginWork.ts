@@ -5,7 +5,7 @@ import { mountChildFibers, reconcileChildFibers } from "./ReactChildFiber";
 /**
  * 从上到下遍历，创建/更新 Fiber 节点
  */
-export function beginWork(current: Fiber, workInProgress: Fiber): Fiber | null {
+export function beginWork(current: Fiber | null, workInProgress: Fiber): Fiber | null {
     switch (workInProgress.tag) {
         case WorkTag.HostRoot:
             return updateHostRoot(current, workInProgress);

@@ -1,7 +1,7 @@
 export const enum WorkTag {
     FunctionComponent,
     ClassComponent,
-    IndeterminateComponent, //在我们知道它是否是函数或之前，
+    IndeterminateComponent, // 在我们知道它是否是函数或之前，
     HostRoot, // Root of a host tree. Could be nested inside another,
     HostPortal, // A subtree. Could be an entry point to a different ren,
     HostComponent,

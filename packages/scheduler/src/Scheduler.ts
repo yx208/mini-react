@@ -3,7 +3,7 @@ import { SchedulerMinHeap } from "./SchedulerMinHeap";
 
 type TaskCallback = (isCallbackTimeout: boolean) => TaskCallback | null | undefined | void;
 
-enum PriorityLevel {
+const enum PriorityLevel {
     NoPriority,
     ImmediatePriority,
     UserBlockingPriority,
@@ -12,7 +12,7 @@ enum PriorityLevel {
     IdlePriority,
 }
 
-enum PriorityTimeout {
+const enum PriorityTimeout {
     IMMEDIATE_PRIORITY_TIMEOUT = -1,
 
     // Eventually times out
@@ -83,7 +83,8 @@ function cancelHostTimeout() {
  * 控制权是否交还给主线程
  */
 function shouldYieldToHost() {
-    return getCurrentTime() >= frameInterval;
+    const timeElapsed = getCurrentTime() - startTime;
+    return timeElapsed >= frameInterval;
 }
 
 /**
@@ -158,29 +159,35 @@ function scheduleCallback(
     options?: { delay: number }
 ) {
     const currentTime = getCurrentTime();
-    let startTime = currentTime;
+    let startTime: number;
 
-    if (typeof options?.delay === "number") {
-        startTime = currentTime + options.delay;
+    if (typeof options === "object" && options !== null) {
+        if (typeof options.delay === "number" && options.delay > 0) {
+            startTime = currentTime + options.delay;
+        } else {
+            startTime = currentTime;
+        }
+    } else {
+        startTime = currentTime;
     }
 
     let timeout: number;
     switch (priorityLevel) {
-    case PriorityLevel.ImmediatePriority:
-        timeout = PriorityTimeout.IMMEDIATE_PRIORITY_TIMEOUT;
-        break;
-    case PriorityLevel.UserBlockingPriority:
-        timeout = PriorityTimeout.USER_BLOCKING_PRIORITY_TIMEOUT;
-        break;
-    case PriorityLevel.LowPriority:
-        timeout = PriorityTimeout.LOW_PRIORITY_TIMEOUT;
-        break;
-    case PriorityLevel.IdlePriority:
-        timeout = PriorityTimeout.IDLE_PRIORITY_TIMEOUT;
-        break;
-    default:
-        timeout = PriorityTimeout.NORMAL_PRIORITY_TIMEOUT;
-        break;
+        case PriorityLevel.ImmediatePriority:
+            timeout = PriorityTimeout.IMMEDIATE_PRIORITY_TIMEOUT;
+            break;
+        case PriorityLevel.UserBlockingPriority:
+            timeout = PriorityTimeout.USER_BLOCKING_PRIORITY_TIMEOUT;
+            break;
+        case PriorityLevel.LowPriority:
+            timeout = PriorityTimeout.LOW_PRIORITY_TIMEOUT;
+            break;
+        case PriorityLevel.IdlePriority:
+            timeout = PriorityTimeout.IDLE_PRIORITY_TIMEOUT;
+            break;
+        default:
+            timeout = PriorityTimeout.NORMAL_PRIORITY_TIMEOUT;
+            break;
     }
 
     const expirationTime = startTime + timeout;
@@ -220,6 +227,7 @@ function scheduleCallback(
             requestHostCallback();
         }
     }
+
 
     return newTask;
 }
@@ -286,7 +294,7 @@ function requestHostCallback() {
 }
 
 // 通过 MessageChannel 创建宏任务
-const channel = new global.MessageChannel();
+const channel = new MessageChannel();
 const port = channel.port2;
 channel.port1.onmessage = performWorkUntilDeadline;
 
@@ -296,17 +304,19 @@ function schedulePerformWorkUntilDeadline() {
 
 // 处理 Channel 宏任务触发
 function performWorkUntilDeadline() {
-    const currentTime = getCurrentTime();
-    startTime = currentTime;
+    if (isMessageLoopRunning) {
+        const currentTime = getCurrentTime();
+        startTime = currentTime;
 
-    let hasMoreWork = true;
-    try {
-        hasMoreWork = flushWork(currentTime);
-    } finally {
-        if (hasMoreWork) {
-            schedulePerformWorkUntilDeadline();
-        } else {
-            isMessageLoopRunning = false;
+        let hasMoreWork = true;
+        try {
+            hasMoreWork = flushWork(currentTime);
+        } finally {
+            if (hasMoreWork) {
+                schedulePerformWorkUntilDeadline();
+            } else {
+                isMessageLoopRunning = false;
+            }
         }
     }
 }
@@ -329,7 +339,6 @@ export {
     cancelCallback,
     cancelHostTimeout,
     scheduleCallback,
-    startTime,
     PriorityLevel,
-}
+};
 
