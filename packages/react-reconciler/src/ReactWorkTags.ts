@@ -1,27 +1,8 @@
-export const enum WorkTag {
-    FunctionComponent,
-    ClassComponent,
-    IndeterminateComponent, // 在我们知道它是否是函数或之前，
-    HostRoot, // Root of a host tree. Could be nested inside another,
-    HostPortal, // A subtree. Could be an entry point to a different ren,
-    HostComponent,
-    HostTex,
-    Fragment,
-    Mod,
-    ContextConsume,
-    ContextProvider,
-    ForwardRef,
-    Profiler,
-    SuspenseComponent,
-    MemoComponent,
-    SimpleMemoComponent,
-    LazyComponent,
-    IncompleteClassComponent,
-    DehydratedFragment,
-    SuspenseListComponent,
-    ScopeComponent,
-    OffscreenComponent,
-    LegacyHiddenComponent,
-    CacheComponent,
-    TracingMarkerComponent
-}
+export type WorkTag = number;
+
+export const FunctionComponent = 0;
+export const ClassComponent = 1;
+export const IndeterminateComponent = 2;
+export const HostRoot = 3;
+export const HostPortal = 4;
+export const HostComponent = 5;

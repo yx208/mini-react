@@ -1,33 +1,29 @@
 import { getCurrentTime } from "shared/utils";
 import { SchedulerMinHeap } from "./SchedulerMinHeap";
+import {
+    type PriorityLevel,
+    IdlePriority,
+    ImmediatePriority,
+    LowPriority,
+    NoPriority,
+    NormalPriority,
+    UserBlockingPriority
+} from "./SchedulerPriorities";
 
 type TaskCallback = (isCallbackTimeout: boolean) => TaskCallback | null | undefined | void;
 
-const enum PriorityLevel {
-    NoPriority,
-    ImmediatePriority,
-    UserBlockingPriority,
-    NormalPriority,
-    LowPriority,
-    IdlePriority,
-}
-
-const enum PriorityTimeout {
-    IMMEDIATE_PRIORITY_TIMEOUT = -1,
-
-    // Eventually times out
-    USER_BLOCKING_PRIORITY_TIMEOUT = 250,
-    NORMAL_PRIORITY_TIMEOUT = 5000,
-    LOW_PRIORITY_TIMEOUT = 10000,
-
-    // Max 31 bit integer. The max integer size in V8 for 32-bit systems.
-    // Math.pow(2, 30) - 1
-    // 0b111111111111111111111111111111
-    // var maxSigned31BitInt = 1073741823;
-    //
-    // Never times out
-    IDLE_PRIORITY_TIMEOUT = 1073741823,
-}
+const IMMEDIATE_PRIORITY_TIMEOUT = -1;
+// Eventually times out
+const USER_BLOCKING_PRIORITY_TIMEOUT = 250;
+const NORMAL_PRIORITY_TIMEOUT = 5000;
+const LOW_PRIORITY_TIMEOUT = 10000;
+// Max 31 bit integer. The max integer size in V8 for 32-bit systems.
+// Math.pow(2, 30) - 1
+// 0b111111111111111111111111111111
+// var maxSigned31BitInt = 1073741823;
+//
+// Never times out
+const IDLE_PRIORITY_TIMEOUT = 1073741823;
 
 export type Task = {
     id: number;
@@ -51,7 +47,7 @@ let taskIdCounter = 1;
 let taskTimeoutID: number = -1;
 // 当前正在执行的任务
 let currentTask: Task | null = null;
-let currentPriorityLevel: PriorityLevel = PriorityLevel.NoPriority;
+let currentPriorityLevel: PriorityLevel = NoPriority;
 
 // 切片开始的时间
 let startTime = -1;
@@ -173,20 +169,21 @@ function scheduleCallback(
 
     let timeout: number;
     switch (priorityLevel) {
-        case PriorityLevel.ImmediatePriority:
-            timeout = PriorityTimeout.IMMEDIATE_PRIORITY_TIMEOUT;
+        case ImmediatePriority:
+            timeout = IMMEDIATE_PRIORITY_TIMEOUT;
             break;
-        case PriorityLevel.UserBlockingPriority:
-            timeout = PriorityTimeout.USER_BLOCKING_PRIORITY_TIMEOUT;
+        case UserBlockingPriority:
+            timeout = USER_BLOCKING_PRIORITY_TIMEOUT;
             break;
-        case PriorityLevel.LowPriority:
-            timeout = PriorityTimeout.LOW_PRIORITY_TIMEOUT;
+        case LowPriority:
+            timeout = LOW_PRIORITY_TIMEOUT;
             break;
-        case PriorityLevel.IdlePriority:
-            timeout = PriorityTimeout.IDLE_PRIORITY_TIMEOUT;
+        case IdlePriority:
+            timeout = IDLE_PRIORITY_TIMEOUT;
             break;
+        case NormalPriority:
         default:
-            timeout = PriorityTimeout.NORMAL_PRIORITY_TIMEOUT;
+            timeout = NORMAL_PRIORITY_TIMEOUT;
             break;
     }
 
@@ -339,6 +336,5 @@ export {
     cancelCallback,
     cancelHostTimeout,
     scheduleCallback,
-    PriorityLevel,
 };
 

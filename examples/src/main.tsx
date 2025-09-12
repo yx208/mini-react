@@ -9,4 +9,4 @@ const jsx = (
 
 ReactDOM
     .createRoot(document.getElementById('root')!)
-    .render(jsx as any)
+    .render(jsx as any);

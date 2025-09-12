@@ -45,7 +45,7 @@ export class SchedulerMinHeap<T extends Node> {
         }
 
         const firstNode = this.heap[0];
-        const lastNode = this.heap.pop();
+        const lastNode = this.heap.pop() as T;
 
         if (firstNode !== lastNode) {
             this.heap[0] = lastNode;

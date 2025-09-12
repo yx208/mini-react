@@ -1,10 +1,9 @@
-export const enum TypeOfMode {
-    NoMode = /*                         */ 0b000000,
-    // TODO: Remove ConcurrentMode by reading from the root tag instead
-    ConcurrentMode = /*                 */ 0b000001,
-    ProfileMode = /*                    */ 0b000010,
-    DebugTracingMode = /*               */ 0b000100,
-    StrictLegacyMode = /*               */ 0b001000,
-    StrictEffectsMode = /*              */ 0b010000,
-    ConcurrentUpdatesByDefaultMode = /* */ 0b100000
-}
+export type TypeOfMode = number;
+
+export const NoMode = /*                         */ 0b000000;
+export const ConcurrentMode = /*                 */ 0b000001;
+export const ProfileMode = /*                    */ 0b000010;
+export const DebugTracingMode = /*               */ 0b000100;
+export const StrictLegacyMode = /*               */ 0b001000;
+export const StrictEffectsMode = /*              */ 0b010000;
+export const ConcurrentUpdatesByDefaultMode = /* */ 0b100000;

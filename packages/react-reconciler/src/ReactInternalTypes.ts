@@ -1,5 +1,5 @@
-import { Flags } from "./ReactFiberFlags";
-import { WorkTag } from "./ReactWorkTags";
+import { type Flags, NoFlags } from "./ReactFiberFlags";
+import type { WorkTag } from "./ReactWorkTags";
 
 export class Fiber {
     // Fiber 标记
@@ -66,7 +66,7 @@ export class Fiber {
         this.memoizedState = null;
 
         // Effects
-        this.flags = Flags.NoFlags;
+        this.flags = NoFlags;
 
         this.alternate = null;
     }
@@ -76,7 +76,7 @@ export type Container = Element | Document | DocumentFragment;
 
 export type FiberRoot = {
     containerInfo: Container;
-    current: Fiber;
+    current: Fiber | null;
     // A finished work-in-progress HostRoot that's ready to be committed.
     // 已完成的 work-in-progress HostRoot，准备提交
     finishedWork: Fiber | null;

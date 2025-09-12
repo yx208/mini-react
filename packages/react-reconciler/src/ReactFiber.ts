@@ -1,6 +1,6 @@
-import { ReactElement } from "shared/ReactElementType";
+import type { ReactElement } from "shared/ReactElementType";
 import { isStr } from "shared/utils";
-import { WorkTag } from "./ReactWorkTags";
+import { HostComponent, IndeterminateComponent, type WorkTag } from "./ReactWorkTags";
 import { Fiber } from "./ReactInternalTypes";
 
 export function createFiber(tag: WorkTag, pendingProps: any, key: string | null) {
@@ -8,20 +8,16 @@ export function createFiber(tag: WorkTag, pendingProps: any, key: string | null)
 }
 
 export function createFiberFromElement(element: ReactElement) {
-    const type = element.type;
-    const key = element.key;
+    const { type, key } = element;
     const pendingProps = element.props;
-    const fiber = createFiberFromTypeAndProps(type, pendingProps, key);
-    console.log("Fiber created");
-
-    return fiber;
+    return createFiberFromTypeAndProps(type, key, pendingProps);
 }
 
 export function createFiberFromTypeAndProps(type: any, key: string | null, pendingProps: any) {
-    let fiberTag = WorkTag.IndeterminateComponent;
+    let fiberTag = IndeterminateComponent;
     // 如果是字符串则为原生标签
     if (isStr(type)) {
-        fiberTag = WorkTag.HostComponent;
+        fiberTag = HostComponent;
     }
 
     const fiber = createFiber(fiberTag, pendingProps, key);
@@ -36,6 +32,7 @@ export function createFiberFromTypeAndProps(type: any, key: string | null, pendi
  */
 export function createWorkInProgress(current: Fiber, pendingProps: any): Fiber {
     let workInProgress = current.alternate;
+
     if (workInProgress === null) {
         workInProgress = createFiber(current.tag, pendingProps, current.key);
         workInProgress.elementType = current.elementType;

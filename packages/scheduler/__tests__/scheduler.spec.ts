@@ -1,18 +1,18 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import {
-    cancelCallback,
-    scheduleCallback,
-    PriorityLevel
-} from "../src/Scheduler";
+    cancelCallback, ImmediatePriority, NormalPriority,
+    scheduleCallback, UserBlockingPriority,
+} from "../src";
+
 
 describe("SchedulerBrowser", () => {
     beforeEach(async () => {
-        vi.useFakeTimers()
-    })
+        vi.useFakeTimers();
+    });
 
     afterEach(() => {
-        vi.clearAllTimers()
-    })
+        vi.clearAllTimers();
+    });
 
     async function waitForSchedule() {
         await vi.runOnlyPendingTimersAsync();
@@ -21,7 +21,7 @@ describe("SchedulerBrowser", () => {
 
     it('task that finishes before deadline', async () => {
         const logArray = ["Message"];
-        scheduleCallback(PriorityLevel.NormalPriority, () => {
+        scheduleCallback(NormalPriority, () => {
             logArray.push("Task");
         });
         expect(logArray).toEqual(['Message']);
@@ -31,10 +31,10 @@ describe("SchedulerBrowser", () => {
 
     it('multiple tasks', async () => {
         const logArray = ["Message"];
-        scheduleCallback(PriorityLevel.NormalPriority, () => {
+        scheduleCallback(NormalPriority, () => {
             logArray.push("Task");
         });
-        scheduleCallback(PriorityLevel.NormalPriority, () => {
+        scheduleCallback(NormalPriority, () => {
             logArray.push("Task2");
         });
         expect(logArray).toEqual(['Message']);
@@ -44,7 +44,7 @@ describe("SchedulerBrowser", () => {
 
     it('cancels tasks', async () => {
         const logArray = ["Message"];
-        const task = scheduleCallback(PriorityLevel.NormalPriority, () => {
+        const task = scheduleCallback(NormalPriority, () => {
             logArray.push("Task");
         });
         cancelCallback(task);
@@ -55,13 +55,13 @@ describe("SchedulerBrowser", () => {
 
     it('priority tasks', async () => {
         const logArray = ["Message"];
-        scheduleCallback(PriorityLevel.NormalPriority, () => {
+        scheduleCallback(NormalPriority, () => {
             logArray.push("NormalPriority");
         });
-        scheduleCallback(PriorityLevel.ImmediatePriority, () => {
+        scheduleCallback(ImmediatePriority, () => {
             logArray.push("ImmediatePriority");
         });
-        scheduleCallback(PriorityLevel.UserBlockingPriority, () => {
+        scheduleCallback(UserBlockingPriority, () => {
             logArray.push("UserBlockingPriority");
         });
         expect(logArray).toEqual(["Message"]);
