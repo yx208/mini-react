@@ -4,13 +4,14 @@ import type { Fiber, FiberRoot } from "./ReactInternalTypes";
 import { createWorkInProgress } from "./ReactFiber";
 import { beginWork } from "./ReactFiberBeginWork";
 import { completeWork } from "./ReactFiberCompleteWork";
+import { commitMutationEffects } from "./ReactFiberCommitWork";
 
 type ExecutionContext = number;
 
 const NoContext = 0b000;
 // const BatchedContext = 0b001;
 const RenderContext = 0b010;
-// const CommitContext = 0b100;
+const CommitContext = 0b100;
 
 // 描述我们在 React 执行栈中的位置
 let executionContext: ExecutionContext = NoContext;
@@ -60,10 +61,10 @@ function performConcurrentWorkOnRoot(root: FiberRoot) {
     // 1 render stage 构建 fiber 树
     renderRootSync(root);
 
-    console.log(root);
+    root.finishedWork = root.current!.alternate;
 
     // 2 commit stage V-DOM 更新到 DOM
-    // commitRoot()
+    commitRoot(root);
 }
 
 /**
@@ -83,6 +84,17 @@ function renderRootSync(root: FiberRoot) {
     workInProgressRoot = null;
 }
 
+function commitRoot(root: FiberRoot) {
+    const prevExecutionContext = executionContext;
+    executionContext |= CommitContext;
+
+    commitMutationEffects(root, root.finishedWork!);
+
+    executionContext = prevExecutionContext;
+    // 将此设置为 null 以指示没有正在进行的渲染
+    workInProgressRoot = null;
+}
+
 /**
  * 负责清除和重置之前渲染或工作过程中附加的任何信息
  * 原理查看 README
@@ -93,7 +105,7 @@ function prepareFreshStack(root: FiberRoot) {
     workInProgressRoot = root;
     // 根据 current Fiber 给当前 Root 创建 workInProgress Fiber
     // 也就是创建当前要更新的 fiber，因为现在的 current 是旧的状态
-    const rootWorkInProgress = createWorkInProgress(root.current!, null);
+    const rootWorkInProgress = createWorkInProgress(root.current, null);
     // 设置当前要工作的 Fiber 树
     if (workInProgress === null) {
         workInProgress = rootWorkInProgress;

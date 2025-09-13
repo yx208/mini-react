@@ -30,9 +30,9 @@ function updateHostRoot(current: Fiber | null, workInProgress: Fiber) {
 
     reconcileChildren(current, workInProgress, nextChildren);
 
-    // if (current) {
-    //     current.child = workInProgress.child;
-    // }
+    if (current) {
+        current.child = workInProgress.child;
+    }
 
     return workInProgress.child;
 }

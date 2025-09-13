@@ -1,4 +1,5 @@
 import { ReactDOM } from "../which-react";
+// import * as ReactDOM from "react-dom/client";
 import './index.css';
 
 const jsx = (
@@ -7,6 +8,6 @@ const jsx = (
     </div>
 );
 
-ReactDOM
-    .createRoot(document.getElementById('root')!)
-    .render(jsx as any);
+const root = ReactDOM
+    .createRoot(document.getElementById('root')!);
+root.render(jsx as any);

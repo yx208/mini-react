@@ -76,7 +76,7 @@ export type Container = Element | Document | DocumentFragment;
 
 export type FiberRoot = {
     containerInfo: Container;
-    current: Fiber | null;
+    current: Fiber;
     // A finished work-in-progress HostRoot that's ready to be committed.
     // 已完成的 work-in-progress HostRoot，准备提交
     finishedWork: Fiber | null;

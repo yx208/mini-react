@@ -29,7 +29,7 @@ function finalizeInitialChildren(element: Element, props: any) {
                 element.textContent = propValue + "";
             }
         } else {
-            element.setAttribute(propsKey, props[propsKey]);
+            (element as any)[propsKey] = props[propsKey];
         }
     }
 }

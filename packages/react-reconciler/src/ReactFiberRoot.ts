@@ -13,7 +13,7 @@ export function createFiberRoot(containerInfo: Container): FiberRoot {
     return root;
 }
 
-class FiberRootNode {
+export class FiberRootNode {
     containerInfo: Container;
     current: Fiber | null;
     finishedWork: Fiber | null;

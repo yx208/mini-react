@@ -25,8 +25,6 @@ class ReactDOMRoot {
             throw new Error('Cannot update an unmounted root.');
         }
 
-        console.log(children);
-
         updateContainer(children, root);
     }
 

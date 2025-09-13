@@ -1,0 +1,81 @@
+import type { Container, Fiber, FiberRoot } from "./ReactInternalTypes";
+import { Placement } from "./ReactFiberFlags";
+import { HostComponent, HostPortal, HostRoot } from "./ReactWorkTags";
+import { FiberRootNode } from "./ReactFiberRoot";
+
+export function commitMutationEffects(root: FiberRoot, finishedWork: Fiber) {
+    commitMutationEffectsOnFiber(root, finishedWork);
+}
+
+function commitMutationEffectsOnFiber(root: FiberRoot, finishedWork: Fiber) {
+    recursivelyTraverseMutationEffects(root, finishedWork);
+    commitReconciliationEffects(finishedWork);
+}
+
+function recursivelyTraverseMutationEffects(root: FiberRoot, parentFiber: Fiber) {
+    let child = parentFiber.child;
+    while (child !== null) {
+        commitMutationEffectsOnFiber(root, child);
+        child = child.sibling;
+    }
+}
+
+/**
+ * 提交调和产生的 effects, 这里的 effects 是调和产生的 flags, 注意 effect 可以同时是多个
+ */
+function commitReconciliationEffects(finishedWork: Fiber) {
+    const flags = finishedWork.flags;
+
+    // 新增插入
+    if (flags & Placement) {
+        commitPlacement(finishedWork);
+        finishedWork.flags &= ~Placement;
+    }
+}
+
+function commitPlacement(finishedWork: Fiber) {
+    switch (finishedWork.tag) {
+        case HostRoot: {
+            // 原生节点才能插入元素(调用 appendChild)
+            const parent = finishedWork.stateNode.containerInfo as Container;
+            if (parent !== null) {
+                parent.appendChild(finishedWork.stateNode);
+            }
+            break;
+        }
+        case HostComponent: {
+            const parentFiber = getHostParentFiber(finishedWork)!;
+            let parent: Element = parentFiber.stateNode;
+            // 如果是 RootFiber
+            if (parent instanceof FiberRootNode) {
+                parent = parentFiber.stateNode.containerInfo;
+            }
+
+            parent.appendChild( finishedWork.stateNode);
+            break;
+        }
+    }
+}
+
+/**
+ * 查找最近的原生 DOM 节点 fiber
+ * @param fiber
+ */
+function getHostParentFiber(fiber: Fiber) {
+    let parent = fiber.return;
+    while (parent !== null) {
+        if (isHostParent(parent)) {
+            return parent;
+        }
+        parent = parent.return;
+    }
+}
+
+function isHostParent(fiber: Fiber): boolean {
+    return (
+        fiber.tag === HostComponent ||
+        fiber.tag === HostRoot ||
+        fiber.tag === HostPortal
+    );
+}
+
