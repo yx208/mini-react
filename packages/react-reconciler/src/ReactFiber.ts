@@ -1,10 +1,14 @@
 import type { ReactElement } from "shared/ReactElementType";
 import { isStr } from "shared/utils";
-import { HostComponent, IndeterminateComponent, type WorkTag } from "./ReactWorkTags";
+import { HostComponent, HostText, IndeterminateComponent, type WorkTag } from "./ReactWorkTags";
 import { Fiber } from "./ReactInternalTypes";
 
 export function createFiber(tag: WorkTag, pendingProps: any, key: string | null) {
     return new Fiber(tag, pendingProps, key);
+}
+
+export function createFiberFromText(content: string) {
+    return createFiber(HostText, content, null);
 }
 
 export function createFiberFromElement(element: ReactElement) {

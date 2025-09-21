@@ -27,10 +27,6 @@ class ReactDOMRoot {
 
         updateContainer(children, root);
     }
-
-    unmount() {
-
-    }
 }
 
 function isValidContainer(node: any) {

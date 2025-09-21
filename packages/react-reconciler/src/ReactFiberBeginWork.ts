@@ -72,6 +72,7 @@ function reconcileChildren(current: Fiber | null, workInProgress: Fiber, nextChi
         // 如果这是一个新的组件（mount 阶段），对于新挂载的组件不需要跟踪副作用
         workInProgress.child = mountChildFibers(workInProgress, null, nextChildren);
     } else {
+        // Root 节点第一次也是走更新
         // 如果是更新现有组件（update 阶段），需要跟踪副作用以便知道哪些 DOM 需要更新
         workInProgress.child = reconcileChildFibers(workInProgress, current.child, nextChildren);
     }

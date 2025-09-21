@@ -1,8 +1,10 @@
 import type { Container, Fiber, FiberRoot } from "./ReactInternalTypes";
 import { Placement } from "./ReactFiberFlags";
 import { HostComponent, HostPortal, HostRoot } from "./ReactWorkTags";
-import { FiberRootNode } from "./ReactFiberRoot";
 
+/**
+ * 提交改变的副作用
+ */
 export function commitMutationEffects(root: FiberRoot, finishedWork: Fiber) {
     commitMutationEffectsOnFiber(root, finishedWork);
 }
@@ -12,6 +14,9 @@ function commitMutationEffectsOnFiber(root: FiberRoot, finishedWork: Fiber) {
     commitReconciliationEffects(finishedWork);
 }
 
+/**
+ * 递归遍历副作用
+ */
 function recursivelyTraverseMutationEffects(root: FiberRoot, parentFiber: Fiber) {
     let child = parentFiber.child;
     while (child !== null) {
@@ -45,13 +50,13 @@ function commitPlacement(finishedWork: Fiber) {
         }
         case HostComponent: {
             const parentFiber = getHostParentFiber(finishedWork)!;
-            let parent: Element = parentFiber.stateNode;
-            // 如果是 RootFiber
-            if (parent instanceof FiberRootNode) {
-                parent = parentFiber.stateNode.containerInfo;
+            if (parentFiber.tag === HostRoot) {
+                const parent: Element = parentFiber.stateNode.containerInfo;
+                parent.appendChild(finishedWork.stateNode);
+            } else {
+                const parent: Element = parentFiber.stateNode;
+                parent.appendChild( finishedWork.stateNode);
             }
-
-            parent.appendChild( finishedWork.stateNode);
             break;
         }
     }

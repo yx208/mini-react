@@ -4,10 +4,11 @@ import './index.css';
 
 const jsx = (
     <div className="outer">
-        <div className="inner">Hello world</div>
+        <div className="inner">Hello</div>
+        <div>world</div>
     </div>
 );
 
-const root = ReactDOM
-    .createRoot(document.getElementById('root')!);
-root.render(jsx as any);
+ReactDOM
+    .createRoot(document.getElementById('root')!)
+    .render(jsx as any);

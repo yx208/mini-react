@@ -23,6 +23,7 @@ export default defineConfig([
         rules: {
             semi: ["error", "always"],
             indent: ["error", 4, { SwitchCase: 1 }],
+            "no-debugger": "off",
             "object-curly-spacing": ["error", "always"],
             "no-global-assign": ["error", { "exceptions": ["MessageChannel", "performance"] }],
             "react/react-in-jsx-scope": "off",

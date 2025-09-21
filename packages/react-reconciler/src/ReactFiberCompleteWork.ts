@@ -35,8 +35,9 @@ function finalizeInitialChildren(element: Element, props: any) {
 }
 
 function appendAllChildren(parent: Element, workInProgress: Fiber) {
-    const child = workInProgress.child;
-    if (child) {
-        parent.appendChild(child.stateNode);
+    let node = workInProgress.child;
+    while (node !== null) {
+        parent.appendChild(node.stateNode);
+        node = node.sibling;
     }
 }

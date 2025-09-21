@@ -21,31 +21,46 @@ let workInProgress: Fiber | null = null;
 let workInProgressRoot: FiberRoot | null = null;
 
 /**
- * 先实现初次渲染
+ * scheduleUpdateOnFiber 函数在 React 中被多次调用
+ * 它是告知 React 进行渲染的途径。该函数当组件状态改变（setState、useState）或 props 变化时被调用
  */
 export function scheduleUpdateOnFiber(root: FiberRoot, fiber: Fiber) {
+    // 将 root 标记为已更新
+    // 这个过程，会将 updateLane 添加到 root 的属性中：pendingLanes，它指的是挂起的 root's work
+    // scheduleUpdateOnFiber();
+
+
     workInProgress = fiber;
     workInProgressRoot = root;
+
+    // 源码中在此之前会有一判断，用于判断的更新类型。此处默认为正常更新，跳过前面步骤，走到下面函数
     ensureRootIsScheduled(root, getCurrentTime());
 
+    // 必定不会触发的代码
     if (fiber === window as unknown as any) {
         console.log(workInProgressRoot);
     }
 }
 
 /**
- * 参见 README
+ * 通过 scheduleMicrotask 安排一个微任务，这意味着 React 将在 main.tsx 文件执行完成后开始渲染组件
  */
 function ensureRootIsScheduled(root: FiberRoot, _currentTime: number) {
-    // 在微任务期间为 root 安排任务
-    queueMicrotask(() => {
+    // 当调用栈为空时，JavaScript 事件循环将处理任务队列，并最终调用在此处安排的回调
+    scheduleMicrotask(() => {
         scheduleTaskForRootDuringMicrotask(root);
     });
 }
 
-/**
- * 在微任务期间为 root 安排任务
- */
+function scheduleMicrotask(fn: () => void) {
+    const isSupportedMicrotask = true;
+    if (isSupportedMicrotask) {
+        queueMicrotask(fn);
+    } else {
+        // fallback
+    }
+}
+
 function scheduleTaskForRootDuringMicrotask(root: FiberRoot) {
     scheduleCallback(
         NormalPriority,
@@ -54,17 +69,19 @@ function scheduleTaskForRootDuringMicrotask(root: FiberRoot) {
 }
 
 /**
- * 在 root 上执行并发工作
- * 这是每个并发任务的入口点，即通过 Scheduler 的任何任务。
+ * 并发渲染起来，调度器在合适时候调用
  */
 function performConcurrentWorkOnRoot(root: FiberRoot) {
     // 1 render stage 构建 fiber 树
     renderRootSync(root);
 
-    root.finishedWork = root.current!.alternate;
+    // current.alternate 就是解析完毕的最新 Fiber 树
+    root.finishedWork = root.current.alternate;
 
     // 2 commit stage V-DOM 更新到 DOM
     commitRoot(root);
+
+    console.log(root);
 }
 
 /**
@@ -107,9 +124,7 @@ function prepareFreshStack(root: FiberRoot) {
     // 也就是创建当前要更新的 fiber，因为现在的 current 是旧的状态
     const rootWorkInProgress = createWorkInProgress(root.current, null);
     // 设置当前要工作的 Fiber 树
-    if (workInProgress === null) {
-        workInProgress = rootWorkInProgress;
-    }
+    workInProgress = rootWorkInProgress;
 
     return rootWorkInProgress;
 }
@@ -129,10 +144,12 @@ function workLoopSync() {
 function performUnitOfWork(unitOfWork: Fiber) {
     const current = unitOfWork.alternate;
 
-    // beginWork 不断返回子节点；即深度优先
+    // beginWork 不断返回子 Fiber
     const next = beginWork(current, unitOfWork);
+    // 协调完之后，把 pending 更新为 memoized
     unitOfWork.memoizedProps = unitOfWork.pendingProps;
 
+    // 达到树底部
     if (next === null) {
         // 当深度达到最底层，调用 completeUnitOfWork 完成该节点的工作
         completeUnitOfWork(unitOfWork);
@@ -144,7 +161,7 @@ function performUnitOfWork(unitOfWork: Fiber) {
 }
 
 /**
- * 函数负责在 Fiber 树的遍历过程中完成当前工作单元的处理，并决定下一个要处理的 Fiber 节点
+ * 在 performUnitOfWork 中调用这个函数的时候已经到达树的左侧最底部
  * 1. 先完成节点的工作
  * 2. 而后判断是否有相邻节点
  */

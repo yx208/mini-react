@@ -2,7 +2,7 @@ import { REACT_ELEMENT_TYPE } from "shared/ReactSymbols";
 import type { ReactElement } from "shared/ReactElementType";
 import { Fiber } from "./ReactInternalTypes";
 import { Placement } from "./ReactFiberFlags";
-import { createFiberFromElement } from "./ReactFiber";
+import { createFiberFromElement, createFiberFromText } from "./ReactFiber";
 
 export const reconcileChildFibers = ChildReconciler(true);
 export const mountChildFibers = ChildReconciler(false);
@@ -42,20 +42,82 @@ function ChildReconciler(shouldTrackSideEffects: boolean) {
         // while (child !== null) {}
 
         // 创建
-        const created = createFiberFromElement(element);
-        created.return = parentFiber;
-        return created;
+        const nextChildFiber = createFiberFromElement(element);
+        nextChildFiber.return = parentFiber;
+        return nextChildFiber;
+    }
+
+    function createChild(returnFiber: Fiber, newChild: any): Fiber | null {
+        const newChildType = typeof newChild;
+
+        if ((newChildType === "string" && newChild !== "") || newChildType === "number") {
+            return createFiberFromText(newChild + "");
+        }
+
+        if (newChildType === "object" && newChildType !== null) {
+            switch (newChild.$$typeof) {
+                case REACT_ELEMENT_TYPE: {
+                    const created = createFiberFromElement(newChild);
+                    created.return = returnFiber;
+                    return created;
+                }
+            }
+
+            if (Array.isArray(newChild)) {
+                return null;
+            }
+        }
+
+        return null;
     }
 
     /**
-     * @param parentFiber - 协调节点的父节点
-     * @param currentFirstChild - 要协调的节点
+     * 如果子元素是多个的数组
+     */
+    function reconcileChildrenArray(
+        parentFiber: Fiber,
+        currentFirstChild: Fiber | null,
+        newChildren: Array<any>
+    ) {
+        const oldFiber = currentFirstChild;
+        let newIndex = 0;
+        let previousNewFiber: Fiber | null = null;
+        let resultingFirstChild: Fiber | null = null;
+
+        // 挂载
+        if (oldFiber === null) {
+            for (; newIndex < newChildren.length; newIndex++) {
+                const newFiber = createChild(parentFiber, newChildren[newIndex]);
+                if (newFiber === null) {
+                    continue;
+                }
+
+                // 在更新阶段用于判断元素位置是否发生变化，有变化则需要移动
+                newFiber.index = newIndex;
+
+                // 第一个成功构建的子元素
+                if (previousNewFiber === null) {
+                    resultingFirstChild = newFiber;
+                } else {
+                    // 相邻节点
+                    previousNewFiber.sibling = newFiber;
+                }
+
+                previousNewFiber = newFiber;
+            }
+        }
+
+        return resultingFirstChild;
+    }
+
+    /**
+     * @param parentFiber - 协调节点的父节点（WorkInProgress）
+     * @param currentFirstChild - 要协调的节点（当前页面显示中的，如果页面没有则是 null）
      * @param newChild
      */
     function reconcileChildFibers(parentFiber: Fiber, currentFirstChild: Fiber | null, newChild: any) {
-        const childType = typeof newChild;
         // 当 newChild 是一个非空的对象时, 有两种可能: 一个节点或者集合
-        if (childType === "object" && newChild !== null) {
+        if (typeof newChild === "object" && newChild !== null) {
             switch (newChild.$$typeof) {
                 // 单个节点
                 case REACT_ELEMENT_TYPE:
@@ -63,7 +125,7 @@ function ChildReconciler(shouldTrackSideEffects: boolean) {
             }
 
             if (Array.isArray(newChild)) {
-                // TODO: 处理 Fragments
+                return reconcileChildrenArray(parentFiber, currentFirstChild, newChild);
             }
         }
 
