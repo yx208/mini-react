@@ -51,7 +51,9 @@ function ChildReconciler(shouldTrackSideEffects: boolean) {
         const newChildType = typeof newChild;
 
         if ((newChildType === "string" && newChild !== "") || newChildType === "number") {
-            return createFiberFromText(newChild + "");
+            const created = createFiberFromText(newChild + "");
+            created.return = returnFiber;
+            return created;
         }
 
         if (newChildType === "object" && newChildType !== null) {
@@ -110,23 +112,42 @@ function ChildReconciler(shouldTrackSideEffects: boolean) {
         return resultingFirstChild;
     }
 
+    function reconcileSingleTextNode(returnFiber: Fiber, currentFirstChild: Fiber | null, textContext: string) {
+        // 无需检查文本节点上的键，因为我们没有办法定义它们。
+        if (currentFirstChild !== null) {
+            // todo
+        }
+
+        const created = createFiberFromText(textContext);
+        created.return = returnFiber;
+        return created;
+    }
+
     /**
-     * @param parentFiber - 协调节点的父节点（WorkInProgress）
+     *
+     * @param returnFiber - 协调节点的父节点（WorkInProgress）
      * @param currentFirstChild - 要协调的节点（当前页面显示中的，如果页面没有则是 null）
      * @param newChild
      */
-    function reconcileChildFibers(parentFiber: Fiber, currentFirstChild: Fiber | null, newChild: any) {
+    function reconcileChildFibers(returnFiber: Fiber, currentFirstChild: Fiber | null, newChild: any) {
+        const newChildType = typeof newChild;
+
         // 当 newChild 是一个非空的对象时, 有两种可能: 一个节点或者集合
-        if (typeof newChild === "object" && newChild !== null) {
+        if (newChildType === "object" && newChild !== null) {
             switch (newChild.$$typeof) {
                 // 单个节点
                 case REACT_ELEMENT_TYPE:
-                    return placeSingleChild(reconcileSingleElement(parentFiber, currentFirstChild, newChild));
+                    return placeSingleChild(reconcileSingleElement(returnFiber, currentFirstChild, newChild));
             }
 
             if (Array.isArray(newChild)) {
-                return reconcileChildrenArray(parentFiber, currentFirstChild, newChild);
+                return reconcileChildrenArray(returnFiber, currentFirstChild, newChild);
             }
+        }
+
+        // 内容是文本
+        if ((newChildType === "string" && newChild !== "") || newChildType === "number") {
+            return placeSingleChild(reconcileSingleTextNode(returnFiber, currentFirstChild, newChild + ""));
         }
 
         return null;

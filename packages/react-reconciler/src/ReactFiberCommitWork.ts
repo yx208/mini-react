@@ -1,6 +1,6 @@
 import type { Container, Fiber, FiberRoot } from "./ReactInternalTypes";
 import { Placement } from "./ReactFiberFlags";
-import { HostComponent, HostPortal, HostRoot } from "./ReactWorkTags";
+import { HostComponent, HostPortal, HostRoot, HostText } from "./ReactWorkTags";
 
 /**
  * 提交改变的副作用
@@ -9,6 +9,9 @@ export function commitMutationEffects(root: FiberRoot, finishedWork: Fiber) {
     commitMutationEffectsOnFiber(root, finishedWork);
 }
 
+/**
+ * 递归遍历副作用，从树的底部左叶子开始处理
+ */
 function commitMutationEffectsOnFiber(root: FiberRoot, finishedWork: Fiber) {
     recursivelyTraverseMutationEffects(root, finishedWork);
     commitReconciliationEffects(finishedWork);
@@ -46,6 +49,15 @@ function commitPlacement(finishedWork: Fiber) {
             if (parent !== null) {
                 parent.appendChild(finishedWork.stateNode);
             }
+            break;
+        }
+        case HostText: {
+            const parentFiber = getHostParentFiber(finishedWork)!;
+            if (parentFiber !== null) {
+                const parentElement: Element = parentFiber.stateNode.containerInfo;
+                parentElement.appendChild(finishedWork.stateNode);
+            }
+
             break;
         }
         case HostComponent: {

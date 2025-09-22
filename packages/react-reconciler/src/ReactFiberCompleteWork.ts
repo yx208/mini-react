@@ -1,5 +1,5 @@
 import type { Fiber } from "./ReactInternalTypes";
-import { HostComponent, HostRoot } from "./ReactWorkTags";
+import { HostComponent, HostRoot, HostText } from "./ReactWorkTags";
 
 export function completeWork(_current: Fiber | null, workInProgress: Fiber): Fiber | null {
     switch (workInProgress.tag) {
@@ -11,6 +11,10 @@ export function completeWork(_current: Fiber | null, workInProgress: Fiber): Fib
             finalizeInitialChildren(instance, workInProgress.pendingProps);
             appendAllChildren(instance, workInProgress);
             workInProgress.stateNode = instance;
+            return null;
+        }
+        case HostText: {
+            workInProgress.stateNode = document.createTextNode(workInProgress.pendingProps);
             return null;
         }
     }

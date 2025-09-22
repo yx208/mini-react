@@ -6,6 +6,7 @@ const jsx = (
     <div className="outer">
         <div className="inner">Hello</div>
         <div>world</div>
+        Good
     </div>
 );
 

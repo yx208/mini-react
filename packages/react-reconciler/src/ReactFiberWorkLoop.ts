@@ -29,7 +29,6 @@ export function scheduleUpdateOnFiber(root: FiberRoot, fiber: Fiber) {
     // 这个过程，会将 updateLane 添加到 root 的属性中：pendingLanes，它指的是挂起的 root's work
     // scheduleUpdateOnFiber();
 
-
     workInProgress = fiber;
     workInProgressRoot = root;
 
@@ -37,8 +36,8 @@ export function scheduleUpdateOnFiber(root: FiberRoot, fiber: Fiber) {
     ensureRootIsScheduled(root, getCurrentTime());
 
     // 必定不会触发的代码
-    if (fiber === window as unknown as any) {
-        console.log(workInProgressRoot);
+    if (workInProgressRoot !== window as unknown as any) {
+        console.log(root);
     }
 }
 
@@ -80,8 +79,6 @@ function performConcurrentWorkOnRoot(root: FiberRoot) {
 
     // 2 commit stage V-DOM 更新到 DOM
     commitRoot(root);
-
-    console.log(root);
 }
 
 /**
