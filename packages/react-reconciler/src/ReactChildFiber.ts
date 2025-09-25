@@ -124,7 +124,6 @@ function ChildReconciler(shouldTrackSideEffects: boolean) {
     }
 
     /**
-     *
      * @param returnFiber - 协调节点的父节点（WorkInProgress）
      * @param currentFirstChild - 要协调的节点（当前页面显示中的，如果页面没有则是 null）
      * @param newChild

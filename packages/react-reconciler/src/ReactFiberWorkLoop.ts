@@ -141,20 +141,18 @@ function workLoopSync() {
 function performUnitOfWork(unitOfWork: Fiber) {
     const current = unitOfWork.alternate;
 
-    // beginWork 不断返回子 Fiber
+    // beginWork 不断返回子 Fiber，向下构建 Fiber
     const next = beginWork(current, unitOfWork);
     // 协调完之后，把 pending 更新为 memoized
     unitOfWork.memoizedProps = unitOfWork.pendingProps;
 
     // 达到树底部
     if (next === null) {
-        // 当深度达到最底层，调用 completeUnitOfWork 完成该节点的工作
+        // 当深度达到最底层，调用 completeUnitOfWork 向上到根部完成每个节点的工作
         completeUnitOfWork(unitOfWork);
     } else {
         workInProgress = next;
     }
-
-    // finished
 }
 
 /**
@@ -169,12 +167,16 @@ function completeUnitOfWork(unitOfWork: Fiber) {
         const current = completedWork.alternate;
         const returnFiber = completedWork.return;
 
+        debugger;
+
         const next = completeWork(current, completedWork);
         if (next !== null) {
             workInProgress = next;
             return;
         }
 
+        // 如果有相邻节点，则下一个完成这个相邻节点的工作
+        // 再次在 performUnitOfWork 遍历 sibling 到底部，完成这个子树的工作
         const siblingFiber = completedWork.sibling;
         if (siblingFiber !== null) {
             workInProgress = siblingFiber;

@@ -1,6 +1,8 @@
 import type { ReactElement } from "shared/ReactElementType";
 import { isStr } from "shared/utils";
-import { HostComponent, HostText, IndeterminateComponent, type WorkTag } from "./ReactWorkTags";
+import { REACT_FRAGMENT_TYPE } from "shared/ReactSymbols";
+import type { WorkTag } from "./ReactWorkTags";
+import { Fragment, HostComponent, HostText, IndeterminateComponent } from "./ReactWorkTags";
 import { Fiber } from "./ReactInternalTypes";
 
 export function createFiber(tag: WorkTag, pendingProps: any, key: string | null) {
@@ -22,6 +24,9 @@ export function createFiberFromTypeAndProps(type: any, key: string | null, pendi
     // 如果是字符串则为原生标签
     if (isStr(type)) {
         fiberTag = HostComponent;
+    } else if (type === REACT_FRAGMENT_TYPE) {
+        // fragment
+        fiberTag = Fragment;
     }
 
     const fiber = createFiber(fiberTag, pendingProps, key);

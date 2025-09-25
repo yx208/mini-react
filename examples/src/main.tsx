@@ -4,9 +4,19 @@ import './index.css';
 
 const jsx = (
     <div className="outer">
-        <div className="inner">Hello</div>
-        <div>world</div>
-        Good
+        <>
+            <>
+                <div>A</div>
+                <div>B</div>
+            </>
+            <div>
+                <div>C</div>
+                <div>D</div>
+            </div>
+            <>E</>
+        </>
+        <div className="first">Hello</div>
+        <div className="second">world</div>
     </div>
 );
 
