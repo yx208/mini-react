@@ -61,7 +61,11 @@ importers:
         specifier: ^5.0.0
         version: 5.0.2(vite@7.1.4(@types/node@24.3.0)(jiti@2.5.1))
 
-  packages/react: {}
+  packages/react:
+    dependencies:
+      shared:
+        specifier: workspace:^
+        version: link:../shared
 
   packages/react-dom:
     dependencies:

@@ -31,5 +31,30 @@ Current tree: 存储在 `fiberRoot.current`，WorkInProgress tree: 存储在 `fi
 
 它的主要职责是在 render 阶段处理已完成工作的 Fiber 节点，并决定下一个要处理的工作单元。在遍历的时候 使用深度优先遍历。
 
+## appendAllChildren 示例
 
+```tsx
+const jsx = (
+    <div className="outer">
+        <>
+            <>
+                <div>
+                    <>
+                        <div>A</div>
+                        <div>B</div>
+                    </>
+                </div>
+                <div>C</div>
+            </>
+            <div>
+                <div>D</div>
+                <div>E</div>
+            </div>
+            <>F</>
+        </>
+        <div className="first">Hello</div>
+        <div className="second">world</div>
+    </div>
+);
+```
 

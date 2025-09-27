@@ -1,6 +1,6 @@
 import type { Container, Fiber, FiberRoot } from "./ReactInternalTypes";
 import { Placement } from "./ReactFiberFlags";
-import { HostComponent, HostPortal, HostRoot, HostText } from "./ReactWorkTags";
+import { Fragment, HostComponent, HostPortal, HostRoot, HostText } from "./ReactWorkTags";
 
 /**
  * 提交改变的副作用
@@ -43,6 +43,14 @@ function commitReconciliationEffects(finishedWork: Fiber) {
 
 function commitPlacement(finishedWork: Fiber) {
     switch (finishedWork.tag) {
+        case Fragment: {
+            let kid = finishedWork.child;
+            while (kid !== null) {
+                commitPlacement(kid);
+                kid = kid.sibling;
+            }
+            break;
+        }
         case HostRoot: {
             // 原生节点才能插入元素(调用 appendChild)
             const parent = finishedWork.stateNode.containerInfo as Container;
@@ -71,6 +79,11 @@ function commitPlacement(finishedWork: Fiber) {
             }
             break;
         }
+        default:
+            throw new Error(
+                'Invalid host parent fiber. This error is likely caused by a bug ' +
+                'in React. Please file an issue.',
+            );
     }
 }
 

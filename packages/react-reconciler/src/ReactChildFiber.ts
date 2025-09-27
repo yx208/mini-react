@@ -74,7 +74,8 @@ function ChildReconciler(shouldTrackSideEffects: boolean) {
     }
 
     /**
-     * 如果子元素是多个的数组
+     * 节点有多个子元素（Array）
+     * 返回协调完毕的子元素数组的第一个元素的 Fiber
      */
     function reconcileChildrenArray(
         parentFiber: Fiber,
