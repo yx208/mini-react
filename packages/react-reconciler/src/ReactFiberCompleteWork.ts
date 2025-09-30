@@ -1,11 +1,12 @@
 import type { Fiber } from "./ReactInternalTypes";
-import { Fragment, HostComponent, HostRoot, HostText } from "./ReactWorkTags";
+import { ClassComponent, Fragment, FunctionComponent, HostComponent, HostRoot, HostText } from "./ReactWorkTags";
 
 export function completeWork(_current: Fiber | null, workInProgress: Fiber): Fiber | null {
     switch (workInProgress.tag) {
+        case ClassComponent:
+        case FunctionComponent:
         case Fragment:
         case HostRoot: {
-            // 这两个类型并没有具体的 DOM 元素
             return null;
         }
         case HostComponent: {

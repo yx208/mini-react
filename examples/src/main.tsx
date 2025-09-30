@@ -3,7 +3,7 @@ import { ReactDOM } from "../which-react";
 
 import './index.css';
 
-const jsx = (
+const jsxFragment = (
     <>
         <div className="outer">
             <>
@@ -28,6 +28,20 @@ const jsx = (
     </>
 );
 
+function FunctionComponentDeclared() {
+    return (
+        <div>Function component</div>
+    )
+}
+
+const jsx = (
+    <div>
+        {jsxFragment}
+        <FunctionComponentDeclared></FunctionComponentDeclared>
+    </div>
+);
+
+// JSX → React Element → Fiber Node → DOM Node
 ReactDOM
     .createRoot(document.getElementById('root')!)
     .render(jsx as any);

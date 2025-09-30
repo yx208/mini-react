@@ -1,6 +1,6 @@
 import { Fiber } from "./ReactInternalTypes";
 import { mountChildFibers, reconcileChildFibers } from "./ReactChildFiber";
-import { Fragment, HostComponent, HostRoot, HostText } from "./ReactWorkTags";
+import { ClassComponent, Fragment, FunctionComponent, HostComponent, HostRoot, HostText } from "./ReactWorkTags";
 
 /**
  * 从上到下遍历，创建/更新 Fiber 节点
@@ -16,12 +16,38 @@ export function beginWork(current: Fiber | null, workInProgress: Fiber): Fiber |
             return updateHostText();
         case Fragment:
             return updateFragment(current, workInProgress);
+        case ClassComponent:
+            return updateClassComponent(current, workInProgress);
+        case FunctionComponent:
+            return updateFunctionComponent(current, workInProgress);
     }
 
     throw new Error(
         `Unknown unit of work tag (${workInProgress.tag}). This error is likely caused by a bug in ` +
         'React. Please file an issue.',
     );
+}
+
+function updateFunctionComponent(current: Fiber | null, workInProgress: Fiber) {
+    const unresolvedProps = workInProgress.pendingProps;
+    const Component = workInProgress.type;
+    const nextChildren = Component(unresolvedProps);
+
+    reconcileChildren(current, workInProgress, nextChildren);
+
+    return workInProgress.child;
+}
+
+function updateClassComponent(current: Fiber | null, workInProgress: Fiber) {
+    const Component = workInProgress.type;
+    const unresolvedProps = workInProgress.pendingProps;
+
+    const instance = new Component(unresolvedProps);
+    const nextChildren = instance.render();
+
+    reconcileChildren(current, workInProgress, nextChildren);
+
+    return workInProgress.child;
 }
 
 function updateFragment(current: Fiber | null, workInProgress: Fiber) {

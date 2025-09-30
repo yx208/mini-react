@@ -2,8 +2,15 @@ import type { ReactElement } from "shared/ReactElementType";
 import { isStr } from "shared/utils";
 import { REACT_FRAGMENT_TYPE } from "shared/ReactSymbols";
 import type { WorkTag } from "./ReactWorkTags";
-import { Fragment, HostComponent, HostText, IndeterminateComponent } from "./ReactWorkTags";
 import { Fiber } from "./ReactInternalTypes";
+import {
+    Fragment,
+    HostComponent,
+    HostText,
+    IndeterminateComponent,
+    ClassComponent,
+    FunctionComponent
+} from "./ReactWorkTags";
 
 export function createFiber(tag: WorkTag, pendingProps: any, key: string | null) {
     return new Fiber(tag, pendingProps, key);
@@ -19,10 +26,23 @@ export function createFiberFromElement(element: ReactElement) {
     return createFiberFromTypeAndProps(type, key, pendingProps);
 }
 
+/**
+ * @param type - 根据不同类型的 Fiber 会有不同的变化
+ * @param key
+ * @param pendingProps
+ */
 export function createFiberFromTypeAndProps(type: any, key: string | null, pendingProps: any) {
     let fiberTag = IndeterminateComponent;
-    // 如果是字符串则为原生标签
-    if (isStr(type)) {
+
+    // 以下判断，识别 Fiber 类型
+    if (typeof type === "function") {
+        if (type.isReactComponent) {
+            fiberTag = ClassComponent;
+        } else {
+            fiberTag = FunctionComponent;
+        }
+    } else if (isStr(type)) {
+        // 如果是字符串则为原生标签
         fiberTag = HostComponent;
     } else if (type === REACT_FRAGMENT_TYPE) {
         // fragment
