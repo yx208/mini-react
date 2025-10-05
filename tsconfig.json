@@ -3,6 +3,10 @@
     "target": "ESNext",
     "moduleResolution": "bundler",
     "erasableSyntaxOnly": false,
+    "baseUrl": ".",
+    "paths": {
+      "mini-react": ["./packages/react"]
+    }
   },
   "files": ["vite.config.ts"]
 }

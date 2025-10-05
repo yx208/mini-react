@@ -11,6 +11,7 @@
   "license": "ISC",
   "packageManager": "pnpm@10.14.0",
   "dependencies": {
+    "react-reconciler": "workspace:^",
     "shared": "workspace:^"
   }
 }

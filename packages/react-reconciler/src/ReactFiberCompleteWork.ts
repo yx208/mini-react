@@ -32,14 +32,18 @@ export function completeWork(_current: Fiber | null, workInProgress: Fiber): Fib
  * 将所有 props 添加到 element DOM 中
  */
 function finalizeInitialChildren(element: Element, props: any) {
-    for (const propsKey in props) {
-        const propValue = props[propsKey];
-        if (propsKey === "children") {
+    for (const propKey in props) {
+        const propValue = props[propKey];
+        if (propKey === "children") {
             if (typeof propValue === "string" || typeof propValue === "number") {
                 element.textContent = propValue + "";
             }
         } else {
-            (element as any)[propsKey] = props[propsKey];
+            if (propKey === "onClick") {
+                element.addEventListener("click", propValue);
+            } else {
+                (element as any)[propKey] = props[propKey];
+            }
         }
     }
 }

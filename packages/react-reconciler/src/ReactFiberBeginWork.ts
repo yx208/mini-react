@@ -1,6 +1,7 @@
 import { Fiber } from "./ReactInternalTypes";
 import { mountChildFibers, reconcileChildFibers } from "./ReactChildFiber";
 import { ClassComponent, Fragment, FunctionComponent, HostComponent, HostRoot, HostText } from "./ReactWorkTags";
+import { renderWithHooks } from "./ReactFiberHooks";
 
 /**
  * 从上到下遍历，创建/更新 Fiber 节点
@@ -31,7 +32,9 @@ export function beginWork(current: Fiber | null, workInProgress: Fiber): Fiber |
 function updateFunctionComponent(current: Fiber | null, workInProgress: Fiber) {
     const unresolvedProps = workInProgress.pendingProps;
     const Component = workInProgress.type;
-    const nextChildren = Component(unresolvedProps);
+
+    // handle hook
+    const nextChildren = renderWithHooks(current, workInProgress, Component, unresolvedProps, null);
 
     reconcileChildren(current, workInProgress, nextChildren);
 

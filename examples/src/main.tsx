@@ -1,43 +1,10 @@
 import { ReactDOM } from "../which-react";
-// import * as ReactDOM from "react-dom/client";
-
 import './index.css';
-
-const jsxFragment = (
-    <>
-        <div className="outer">
-            <>
-                <>
-                    <div>
-                        <>
-                            <div>A</div>
-                            <div>B</div>
-                        </>
-                    </div>
-                    <div>C</div>
-                </>
-                <div>
-                    <div>D</div>
-                    <div>E</div>
-                </div>
-                <>F</>
-            </>
-            <div className="first">Hello</div>
-            <div className="second">world</div>
-        </div>
-    </>
-);
-
-function FunctionComponentDeclared() {
-    return (
-        <div>Function component</div>
-    )
-}
+import { HookTestExample } from "./examples/hook";
 
 const jsx = (
     <div>
-        {jsxFragment}
-        <FunctionComponentDeclared></FunctionComponentDeclared>
+        <HookTestExample></HookTestExample>
     </div>
 );
 

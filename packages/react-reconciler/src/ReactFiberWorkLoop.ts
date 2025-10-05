@@ -37,7 +37,7 @@ export function scheduleUpdateOnFiber(root: FiberRoot, fiber: Fiber) {
 
     // 必定不会触发的代码
     if (workInProgressRoot !== window as unknown as any) {
-        console.log(root);
+        // console.log(root);
     }
 }
 

@@ -79,3 +79,12 @@ export type FiberRoot = {
     current: Fiber;
     finishedWork: Fiber | null;
 }
+
+type Dispatch<A> = (action: A) => void;
+export type Dispatcher = {
+    useReducer<S, I, A>(
+        reducer: (state: S, action: A) => S,
+        initialArg: I,
+        init?: (initState: I) => S
+    ): [S, Dispatch<A>];
+}

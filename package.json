@@ -6,6 +6,7 @@
   "scripts": {
     "test": "vitest"
   },
+  "private": true,
   "keywords": [],
   "author": "",
   "license": "MIT",
