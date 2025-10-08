@@ -1,6 +1,6 @@
 import type { Container, Fiber, FiberRoot } from "./ReactInternalTypes";
 import { Placement } from "./ReactFiberFlags";
-import { Fragment, HostComponent, HostPortal, HostRoot, HostText } from "./ReactWorkTags";
+import {Fragment, FunctionComponent, HostComponent, HostPortal, HostRoot, HostText} from "./ReactWorkTags";
 
 /**
  * 提交改变的副作用
@@ -43,6 +43,7 @@ function commitReconciliationEffects(finishedWork: Fiber) {
 
 function commitPlacement(finishedWork: Fiber) {
     switch (finishedWork.tag) {
+        case FunctionComponent:
         case Fragment: {
             let kid = finishedWork.child;
             while (kid !== null) {
@@ -65,7 +66,6 @@ function commitPlacement(finishedWork: Fiber) {
                 const parentElement: Element = parentFiber.stateNode.containerInfo;
                 parentElement.appendChild(finishedWork.stateNode);
             }
-
             break;
         }
         case HostComponent: {

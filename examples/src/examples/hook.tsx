@@ -1,7 +1,7 @@
 import { useReducer } from "../../which-react";
 
-const countReducer = (_initState: number, _action: number) => {
-    return 0;
+const countReducer = (_initState: number, action: number) => {
+    return action;
 };
 
 function HookTestExample() {
@@ -13,8 +13,7 @@ function HookTestExample() {
 
     return (
         <div>
-            <div>{ count }</div>
-            <button onClick={handleIncrement}>Click Me</button>
+            <button onClick={handleIncrement}>{ count }</button>
         </div>
     );
 }

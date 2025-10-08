@@ -1,7 +1,7 @@
 import type { Fiber } from "./ReactInternalTypes";
 import { ClassComponent, Fragment, FunctionComponent, HostComponent, HostRoot, HostText } from "./ReactWorkTags";
 
-export function completeWork(_current: Fiber | null, workInProgress: Fiber): Fiber | null {
+export function completeWork(current: Fiber | null, workInProgress: Fiber): Fiber | null {
     switch (workInProgress.tag) {
         case ClassComponent:
         case FunctionComponent:
@@ -10,10 +10,18 @@ export function completeWork(_current: Fiber | null, workInProgress: Fiber): Fib
             return null;
         }
         case HostComponent: {
-            const instance = document.createElement(workInProgress.type) as Element;
-            finalizeInitialChildren(instance, workInProgress.pendingProps);
-            appendAllChildren(instance, workInProgress);
-            workInProgress.stateNode = instance;
+            // 更新阶段
+            if (current !== null && workInProgress.stateNode !== null) {
+                const type = workInProgress.type;
+                updateHostComponent(current, workInProgress, type, workInProgress.pendingProps);
+            } else {
+                // 挂载阶段
+                const instance = document.createElement(workInProgress.type) as Element;
+                finalizeInitialChildren(instance, null, workInProgress.pendingProps);
+                appendAllChildren(instance, workInProgress);
+                workInProgress.stateNode = instance;
+            }
+
             return null;
         }
         case HostText: {
@@ -28,12 +36,35 @@ export function completeWork(_current: Fiber | null, workInProgress: Fiber): Fib
     );
 }
 
+function updateHostComponent(current: Fiber | null, workInProgress: Fiber, _type: string, newProps: any) {
+    if (current?.memoizedProps === newProps) {
+        return;
+    }
+
+    finalizeInitialChildren(workInProgress.stateNode, current?.memoizedProps, newProps);
+}
+
 /**
  * 将所有 props 添加到 element DOM 中
  */
-function finalizeInitialChildren(element: Element, props: any) {
-    for (const propKey in props) {
-        const propValue = props[propKey];
+function finalizeInitialChildren(element: Element, oldProps: any, newProps: any) {
+    for (const oldKey in oldProps) {
+        const propValue = oldProps[oldKey];
+        if (oldKey === "children") {
+            if (typeof propValue === "string" || typeof propValue === "number") {
+                element.textContent = "";
+            }
+        } else {
+            if (oldKey === "onClick") {
+                element.removeEventListener("click", propValue);
+            } else {
+                (element as any)[oldKey] = null;
+            }
+        }
+    }
+
+    for (const propKey in newProps) {
+        const propValue = newProps[propKey];
         if (propKey === "children") {
             if (typeof propValue === "string" || typeof propValue === "number") {
                 element.textContent = propValue + "";
@@ -42,7 +73,7 @@ function finalizeInitialChildren(element: Element, props: any) {
             if (propKey === "onClick") {
                 element.addEventListener("click", propValue);
             } else {
-                (element as any)[propKey] = props[propKey];
+                (element as any)[propKey] = newProps[propKey];
             }
         }
     }

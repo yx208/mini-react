@@ -120,8 +120,12 @@ function prepareFreshStack(root: FiberRoot) {
     // 根据 current Fiber 给当前 Root 创建 workInProgress Fiber
     // 也就是创建当前要更新的 fiber，因为现在的 current 是旧的状态
     const rootWorkInProgress = createWorkInProgress(root.current, null);
-    // 设置当前要工作的 Fiber 树
-    workInProgress = rootWorkInProgress;
+
+    // 初次渲染
+    if (workInProgress === null) {
+        // 设置当前要工作的 Fiber 树
+        workInProgress = rootWorkInProgress;
+    }
 
     return rootWorkInProgress;
 }

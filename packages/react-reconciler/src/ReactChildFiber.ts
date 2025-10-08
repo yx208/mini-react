@@ -2,7 +2,7 @@ import { REACT_ELEMENT_TYPE } from "shared/ReactSymbols";
 import type { ReactElement } from "shared/ReactElementType";
 import { Fiber } from "./ReactInternalTypes";
 import { Placement } from "./ReactFiberFlags";
-import { createFiberFromElement, createFiberFromText } from "./ReactFiber";
+import { createFiberFromElement, createFiberFromText, createWorkInProgress } from "./ReactFiber";
 
 export const reconcileChildFibers = ChildReconciler(true);
 export const mountChildFibers = ChildReconciler(false);
@@ -11,6 +11,16 @@ export const mountChildFibers = ChildReconciler(false);
  * @param shouldTrackSideEffects - 用来区分组件是首次挂载（mount:false）还是更新（update:true）
  */
 function ChildReconciler(shouldTrackSideEffects: boolean) {
+    /**
+     * 我们目前在这里将 sibling 设置为 null，索引设置为 0，因为在返回它之前很容易忘记执行。例如单个子元素的情况
+     */
+    function useFiber(fiber: Fiber, pendingProps: any): Fiber {
+        const clone = createWorkInProgress(fiber, pendingProps);
+        clone.index = 0;
+        clone.sibling = null;
+        return clone;
+    }
+
     /**
      * 它的主要作用是标记新创建的 Fiber 节点需要进行 DOM 插入操作
      *
@@ -31,19 +41,40 @@ function ChildReconciler(shouldTrackSideEffects: boolean) {
      * 负责处理单个 ReactElement 的 diff 算法
      * 对比新的 ReactElement 与现有 Fiber, 决定是复用/更新, 还是创建新的 Fiber 节点
      *
-     * @param parentFiber - 当前处理的 Fiber, 相对于 currentFirstChild 为 parent(returnFiber)
-     * @param _currentFirstChild - 在挂在阶段 这个是为 null
-     * @param element - 新的元素
+     * @param returnFiber - 当前处理的 Fiber, 相对于 currentFirstChild 为 parent(returnFiber)
+     * @param currentFirstChild - 在挂在阶段 这个是为 null
+     * @param element - 新的元素（单个）
      */
-    function reconcileSingleElement(parentFiber: Fiber, _currentFirstChild: Fiber | null, element: ReactElement) {
-        // TODO: diff
+    function reconcileSingleElement(returnFiber: Fiber, currentFirstChild: Fiber | null, element: ReactElement) {
+        // 复用条件：1 同一层级，2 key 相同，3 类型相同
+        // currentFirstChild 是 parentFiber 的子级第一个元素，从里开始搜索同一层级(已满足第一条件)
+        const key = element.key;
+        let child = currentFirstChild;
+        while (child !== null) {
+            // 第二条件
+            if (child.key === key) {
+                const elementType = element.type;
+                // 第三条件
+                if (child.elementType === elementType) {
+                    // 因为是单个子元素，找到了之后其他的节点应该删除
 
-        // let child = currentFirstChild;
-        // while (child !== null) {}
+                    const existing = useFiber(child, element.props);
+                    existing.return = returnFiber;
+                    return existing;
+                } else {
+                    break;
+                }
+            } else {
+                // 因为是单个子元素，所以其他的节点应该删除
+                // delete
+            }
+
+            child = child.sibling;
+        }
 
         // 创建
         const nextChildFiber = createFiberFromElement(element);
-        nextChildFiber.return = parentFiber;
+        nextChildFiber.return = returnFiber;
         return nextChildFiber;
     }
 
@@ -76,6 +107,9 @@ function ChildReconciler(shouldTrackSideEffects: boolean) {
     /**
      * 节点有多个子元素（Array）
      * 返回协调完毕的子元素数组的第一个元素的 Fiber
+     * @param parentFiber
+     * @param currentFirstChild
+     * @param newChildren - 多个新子元素
      */
     function reconcileChildrenArray(
         parentFiber: Fiber,
