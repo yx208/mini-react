@@ -1,7 +1,7 @@
 import { REACT_ELEMENT_TYPE } from "shared/ReactSymbols";
 import type { ReactElement } from "shared/ReactElementType";
 import { Fiber } from "./ReactInternalTypes";
-import { Placement } from "./ReactFiberFlags";
+import { ChildDeletion, Placement } from "./ReactFiberFlags";
 import { createFiberFromElement, createFiberFromText, createWorkInProgress } from "./ReactFiber";
 
 export const reconcileChildFibers = ChildReconciler(true);
@@ -19,6 +19,41 @@ function ChildReconciler(shouldTrackSideEffects: boolean) {
         clone.index = 0;
         clone.sibling = null;
         return clone;
+    }
+
+    /**
+     * 标记删除元素
+     */
+    function deleteChild(returnFiber: Fiber, child: Fiber) {
+        // 初次渲染
+        if (!shouldTrackSideEffects) {
+            return;
+        }
+
+        if (returnFiber.deletions === null) {
+            returnFiber.deletions = [child];
+            returnFiber.flags |= ChildDeletion;
+        } else {
+            returnFiber.deletions.push(child);
+        }
+    }
+
+    /**
+     * 从某个 Fiber 开始删除链表中剩余的元素
+     */
+    function deleteRemainingChildren(returnFiber: Fiber, currentFirstChild: Fiber | null) {
+        // 初次渲染
+        if (!shouldTrackSideEffects) {
+            return;
+        }
+
+        let childToDelete = currentFirstChild;
+        while (childToDelete !== null) {
+            deleteChild(returnFiber, childToDelete);
+            childToDelete = childToDelete.sibling;
+        }
+
+        return null;
     }
 
     /**
@@ -62,11 +97,14 @@ function ChildReconciler(shouldTrackSideEffects: boolean) {
                     existing.return = returnFiber;
                     return existing;
                 } else {
+                    // key 相同但类型不同；说明已经没有节点可以复用（同一层级不能有重复的 key）
+                    // 删除后面剩余的所有元素（包括 child）
+                    deleteRemainingChildren(returnFiber, child);
                     break;
                 }
             } else {
-                // 因为是单个子元素，所以其他的节点应该删除
-                // delete
+                // 因为是单个子元素协调，所以其他的节点应该删除
+                deleteChild(returnFiber, child);
             }
 
             child = child.sibling;

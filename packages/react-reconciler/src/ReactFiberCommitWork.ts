@@ -1,6 +1,6 @@
 import type { Container, Fiber, FiberRoot } from "./ReactInternalTypes";
-import { Placement } from "./ReactFiberFlags";
-import {Fragment, FunctionComponent, HostComponent, HostPortal, HostRoot, HostText} from "./ReactWorkTags";
+import { ChildDeletion, Placement } from "./ReactFiberFlags";
+import { Fragment, FunctionComponent, HostComponent, HostPortal, HostRoot, HostText } from "./ReactWorkTags";
 
 /**
  * 提交改变的副作用
@@ -29,18 +29,56 @@ function recursivelyTraverseMutationEffects(root: FiberRoot, parentFiber: Fiber)
 }
 
 /**
- * 提交调和产生的 effects, 这里的 effects 是调和产生的 flags, 注意 effect 可以同时是多个
+ * 处理调和产生的 effects, 这里的 effects 是调和产生的 flags
+ * 注意 effect 可以同时是多个
  */
 function commitReconciliationEffects(finishedWork: Fiber) {
     const flags = finishedWork.flags;
 
-    // 新增插入
+    // 新增
     if (flags & Placement) {
         commitPlacement(finishedWork);
         finishedWork.flags &= ~Placement;
     }
+
+    // 删除
+    if (flags & ChildDeletion) {
+        const parentFiber = isHostParent(finishedWork)
+            ? finishedWork
+            : getHostParentFiber(finishedWork);
+        commitDeletions(parentFiber, finishedWork.deletions!);
+
+        finishedWork.flags &= ~ChildDeletion;
+        finishedWork.deletions = null;
+    }
 }
 
+/**
+ * 删除
+ */
+function commitDeletions(parentFiber: Fiber, deletions: Fiber[]) {
+    const dom = parentFiber.stateNode;
+    deletions.forEach(deletionFiber => {
+        dom.removeChild(getStateNode(deletionFiber));
+    });
+}
+
+/**
+ * 获取有 dom 节点的额 Fiber
+ */
+function getStateNode(fiber: Fiber) {
+    let node = fiber;
+    while (true) {
+        if (isHost(node) && node.stateNode) {
+            return node.stateNode;
+        }
+        node = node.child!;
+    }
+}
+
+/**
+ * 处理新增
+ */
 function commitPlacement(finishedWork: Fiber) {
     switch (finishedWork.tag) {
         case FunctionComponent:
@@ -91,7 +129,7 @@ function commitPlacement(finishedWork: Fiber) {
  * 查找最近的原生 DOM 节点 fiber
  * @param fiber
  */
-function getHostParentFiber(fiber: Fiber) {
+function getHostParentFiber(fiber: Fiber): Fiber {
     let parent = fiber.return;
     while (parent !== null) {
         if (isHostParent(parent)) {
@@ -99,6 +137,12 @@ function getHostParentFiber(fiber: Fiber) {
         }
         parent = parent.return;
     }
+
+    throw new Error("Unknown host parent fiber.");
+}
+
+function isHost(fiber: Fiber): boolean {
+    return fiber.tag === HostComponent || fiber.tag === HostText;
 }
 
 function isHostParent(fiber: Fiber): boolean {

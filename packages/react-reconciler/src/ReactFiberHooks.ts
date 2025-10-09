@@ -233,6 +233,9 @@ function dispatchReducerAction<S, A>(
     }
 }
 
+/**
+ * 获取 FiberRoot
+ */
 function getRootForUpdateFiber(sourceFiber: Fiber): FiberRoot | null {
     let node = sourceFiber;
     let parent = node.return;

@@ -43,6 +43,7 @@ export class Fiber {
 
     // 组件副作用行为：更新？插入？新增？删除？
     flags: Flags;
+    deletions: Array<Fiber> | null;
 
     // 缓存 Fiber，在 Diff 的时候对比新老 VDOM
     alternate: Fiber | null;
@@ -67,6 +68,7 @@ export class Fiber {
 
         // Effects
         this.flags = NoFlags;
+        this.deletions = null;
 
         this.alternate = null;
     }

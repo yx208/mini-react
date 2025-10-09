@@ -1,19 +1,27 @@
 import { useReducer } from "../../which-react";
 
-const countReducer = (_initState: number, action: number) => {
-    return action;
+const countReducer = (state: number, action: string) => {
+    if (action === "increment") {
+        return state + 1;
+    }
+
+    throw Error('Unknown action.');
 };
 
 function HookTestExample() {
     const [count, dispatch] = useReducer(countReducer, 0);
 
     const handleIncrement = () => {
-        dispatch(count + 1);
+        debugger;
+        dispatch("increment");
     };
 
     return (
         <div>
-            <button onClick={handleIncrement}>{ count }</button>
+            {count % 2 === 0
+                ? <button onClick={handleIncrement}>偶数显示 { count }</button>
+                : <button onClick={handleIncrement}>奇数显示 { count }</button>
+            }
         </div>
     );
 }
