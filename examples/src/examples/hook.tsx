@@ -9,18 +9,17 @@ const countReducer = (state: number, action: string) => {
 };
 
 function HookTestExample() {
-    const [count, dispatch] = useReducer(countReducer, 0);
+    const [count, setCountIncrement] = useReducer(countReducer, 0);
 
     const handleIncrement = () => {
-        debugger;
-        dispatch("increment");
+        setCountIncrement("increment");
     };
 
     return (
         <div>
             {count % 2 === 0
-                ? <button onClick={handleIncrement}>偶数显示 { count }</button>
-                : <button onClick={handleIncrement}>奇数显示 { count }</button>
+                ? <button onClick={handleIncrement}>{count}</button>
+                : <button onClick={handleIncrement}>{count + 1000}</button>
             }
         </div>
     );
