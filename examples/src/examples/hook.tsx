@@ -18,8 +18,8 @@ function HookTestExample() {
     return (
         <div>
             {count % 2 === 0
-                ? <button onClick={handleIncrement}>{count}</button>
-                : <button onClick={handleIncrement}>{count + 1000}</button>
+                ? <button className="first" onClick={handleIncrement}>{count}</button>
+                : <button className="second" onClick={handleIncrement}>{count + 1000}</button>
             }
         </div>
     );
