@@ -1,8 +1,8 @@
 import { ReactDOM } from "../which-react";
 import './index.css';
-import { HookTestExample } from "./examples/hook";
+import { BasePositionReconcile } from "./examples/reconcilation";
 
 // JSX → React Element → Fiber Node → DOM Node
 ReactDOM
     .createRoot(document.getElementById('root')!)
-    .render((<HookTestExample />) as any);
+    .render((<BasePositionReconcile />) as any);

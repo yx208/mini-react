@@ -6,7 +6,7 @@ export function isArray(sth: any) {
     return Array.isArray(sth);
 }
 
-export function isNum(sth: any) {
+export function isNumber(sth: any) {
     return typeof sth === 'number';
 }
 
@@ -20,4 +20,12 @@ export function isFunction(sth: any) {
 
 export function isStr(sth: any) {
     return typeof sth === 'string';
+}
+
+export function isNotEmptyString(sth: any) {
+    return typeof sth === 'string' && sth !== "";
+}
+
+export function isValidObject(sth: any) {
+    return typeof sth === 'object' && sth !== null;
 }
