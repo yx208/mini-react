@@ -54,6 +54,8 @@ function finalizeInitialChildren(element: Element, oldProps: any, newProps: any)
             if (typeof propValue === "string" || typeof propValue === "number") {
                 element.textContent = "";
             }
+        } else if (oldKey === "style") {
+            (element as HTMLElement).style.cssText = "";
         } else {
             if (oldKey === "onClick") {
                 element.removeEventListener("click", propValue);
@@ -69,7 +71,13 @@ function finalizeInitialChildren(element: Element, oldProps: any, newProps: any)
             if (typeof propValue === "string" || typeof propValue === "number") {
                 element.textContent = propValue + "";
             }
-        } else {
+        } else if (propKey === "style") {
+            if (typeof propValue === "object" && propValue !== null) {
+                for (const styleKey in propValue) {
+                    ((element as HTMLElement).style as any)[styleKey] = propValue[styleKey];
+                }
+            }
+        }  else {
             if (propKey === "onClick") {
                 element.addEventListener("click", propValue);
             } else {

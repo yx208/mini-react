@@ -222,7 +222,7 @@ function dispatchReducerAction<S, A>(
     reducer: (state: S, action: A) => S,
     action: any,
 ) {
-    // 兼容 useState
+    // 兼容 useState，使用新计算出来的 state 覆盖 hook 保存的旧 state
     hook.memoizedState = reducer ? reducer(hook.memoizedState, action) : action;
 
     fiber.alternate = { ...fiber };
@@ -234,7 +234,7 @@ function dispatchReducerAction<S, A>(
 }
 
 /**
- * 获取 FiberRoot
+ * 获取 sourceFiber 所对应的 FiberRoot。这里我猜测应该是为了应对多个 root 的情况
  */
 function getRootForUpdateFiber(sourceFiber: Fiber): FiberRoot | null {
     let node = sourceFiber;

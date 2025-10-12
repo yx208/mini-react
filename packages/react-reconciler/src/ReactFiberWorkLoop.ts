@@ -46,9 +46,7 @@ export function scheduleUpdateOnFiber(root: FiberRoot, fiber: Fiber) {
  */
 function ensureRootIsScheduled(root: FiberRoot, _currentTime: number) {
     // 当调用栈为空时，JavaScript 事件循环将处理任务队列，并最终调用在此处安排的回调
-    scheduleMicrotask(() => {
-        scheduleTaskForRootDuringMicrotask(root);
-    });
+    scheduleMicrotask(scheduleTaskForRootDuringMicrotask.bind(null, root));
 }
 
 function scheduleMicrotask(fn: () => void) {
@@ -88,21 +86,11 @@ function renderRootSync(root: FiberRoot) {
     const prevExecutionContext = executionContext;
     executionContext |= RenderContext;
 
-    // 初始化 WIP 树，设置相关全局变量
+    // 设置相关全局变量
     prepareFreshStack(root);
+
     // 遍历构建 Fiber 树
     workLoopSync();
-
-    executionContext = prevExecutionContext;
-    // 将此设置为 null 以指示没有正在进行的渲染
-    workInProgressRoot = null;
-}
-
-function commitRoot(root: FiberRoot) {
-    const prevExecutionContext = executionContext;
-    executionContext |= CommitContext;
-
-    commitMutationEffects(root, root.finishedWork!);
 
     executionContext = prevExecutionContext;
     // 将此设置为 null 以指示没有正在进行的渲染
@@ -114,27 +102,44 @@ function commitRoot(root: FiberRoot) {
  * 原理查看 README
  */
 function prepareFreshStack(root: FiberRoot) {
+    // 因为要开始一次新的更新，把上次完成的 workInProgress tree 清除
     root.finishedWork = null;
 
+    // 把当前工作的 FiberRoot 保存到全局中（可能会有多个 root）
     workInProgressRoot = root;
-    // 根据 current Fiber 给当前 Root 创建 workInProgress Fiber
-    // 也就是创建当前要更新的 fiber，因为现在的 current 是旧的状态
+
+    // 在目前的实现中，root 节点的 current fiber，无论是更新阶段还是挂载阶段，都是有的 current 的
+    // 在页面初始化的时候 createRoot 中调用了 createFiberRoot，创建了 FiberRoot 与其对应的 root 的 current fiber
+    // 而 root 是页面挂载的 dom 节点，无论何时其都是没有 props 的
     const rootWorkInProgress = createWorkInProgress(root.current, null);
 
-    // 初次渲染
+    // 页面初次渲染并没有 workInProgress fiber，让它从根节点开始
+    // 如果并非初次渲染，那么就是更新阶段，更新阶段会调用 scheduleUpdateOnFiber，把更新的 fiber 传入
+    // 而后把这个更新的 fiber 保存在 workInProgress
     if (workInProgress === null) {
         // 设置当前要工作的 Fiber 树
         workInProgress = rootWorkInProgress;
     }
-
-    return rootWorkInProgress;
 }
 
+/**
+ * 构建 workInProgress Fiber 树
+ */
 function workLoopSync() {
-    // 同步，所以执行工作时不检查是否需要让出控制权
     while (workInProgress !== null) {
         performUnitOfWork(workInProgress);
     }
+}
+
+function commitRoot(root: FiberRoot) {
+    const prevExecutionContext = executionContext;
+    executionContext |= CommitContext;
+
+    commitMutationEffects(root, root.finishedWork!);
+
+    executionContext = prevExecutionContext;
+    // 将此设置为 null 以指示没有正在进行的渲染
+    workInProgressRoot = null;
 }
 
 /**

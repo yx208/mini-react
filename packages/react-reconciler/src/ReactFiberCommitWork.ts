@@ -98,22 +98,17 @@ function commitPlacement(finishedWork: Fiber) {
             }
             break;
         }
-        case HostText: {
-            const parentFiber = getHostParentFiber(finishedWork)!;
-            if (parentFiber !== null) {
-                const parentElement: Element = parentFiber.stateNode.containerInfo;
-                parentElement.appendChild(finishedWork.stateNode);
-            }
-            break;
-        }
+        case HostText:
         case HostComponent: {
             const parentFiber = getHostParentFiber(finishedWork)!;
+            const before = getHostSibling(finishedWork);
+
             if (parentFiber.tag === HostRoot) {
                 const parent: Element = parentFiber.stateNode.containerInfo;
-                parent.appendChild(finishedWork.stateNode);
+                insertOrAppendPlacementNode(finishedWork, before, parent);
             } else {
                 const parent: Element = parentFiber.stateNode;
-                parent.appendChild( finishedWork.stateNode);
+                insertOrAppendPlacementNode(finishedWork, before, parent);
             }
             break;
         }
@@ -122,6 +117,56 @@ function commitPlacement(finishedWork: Fiber) {
                 'Invalid host parent fiber. This error is likely caused by a bug ' +
                 'in React. Please file an issue.',
             );
+    }
+}
+
+function insertOrAppendPlacementNode(node: Fiber, before: Element | null, parent: Element) {
+    if (before !== null) {
+        parent.insertBefore(getStateNode(node), before);
+    } else {
+        parent.appendChild(getStateNode(node));
+    }
+}
+
+/**
+ * 寻找有 DOM 的 sibling 节点
+ */
+function getHostSibling(fiber: Fiber): HTMLElement | null {
+    let node = fiber;
+    sibling: while (true) {
+        while (node.sibling === null) {
+            if (node.return === null || isHostParent(node.return)) {
+                return null;
+            }
+
+            node = node.return;
+        }
+
+        node.sibling.return = node.return;
+        node = node.sibling;
+
+        // 如果不是有效的 DOM 节点，意味着可能是函数组件、类组件之类的，则往里面找
+        while (node.tag !== HostComponent && node.tag !== HostText) {
+            // 这个节点会发生改动，位置不稳定
+            if (node.flags & Placement) {
+                continue sibling;
+            }
+
+            // 假如进入这个 while 的是个函数组件，那么它的子 fiber 可能是 DOM 元素
+            // 当然，如果没有 child，那么必定没有 DOM 元素，因为函数组件本身 fiber 并不存在 DOM 元素
+            if (node.child === null) {
+                continue sibling;
+            } else {
+                // 那就继续往里面找
+                node = node.child;
+            }
+        }
+
+        // 过了上面的 while 意味着这是一个有 DOM 节点的 fiber
+        // 当然，他也不能是一个将要移动的 Fiber
+        if (!(node.flags & Placement)) {
+            return node.stateNode;
+        }
     }
 }
 

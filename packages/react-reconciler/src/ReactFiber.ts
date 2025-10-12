@@ -57,18 +57,22 @@ export function createFiberFromTypeAndProps(type: any, key: string | null, pendi
 }
 
 /**
- * 为每个 current fiber node 创建对应的 workInProgress fiber node
+ * 根据 current fiber 创建 workInProgress fiber。
+ * 如果 current 有对应的 workInProgress，那么则更新 workInProgress(current.alternate) 的属性。
+ * 如果 current 还没有创建过 workInProgress 则为它创建一个，并把 current 的 alternate 指向这个 workInProgress。
  */
 export function createWorkInProgress(current: Fiber, pendingProps: any): Fiber {
     let workInProgress = current.alternate;
 
     if (workInProgress === null) {
         workInProgress = createFiber(current.tag, pendingProps, current.key);
+
         workInProgress.elementType = current.elementType;
         workInProgress.type = current.type;
         workInProgress.stateNode = current.stateNode;
 
         workInProgress.alternate = current;
+
         current.alternate = workInProgress;
     } else {
         workInProgress.pendingProps = pendingProps;
