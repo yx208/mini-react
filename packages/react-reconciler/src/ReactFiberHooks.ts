@@ -19,6 +19,8 @@ type Hook = {
 
 type Dispatch<A> = (action: A) => void;
 
+type BaseStateAction<S> = ((state: S) => S) | S;
+
 /**
  * 挂载阶段，连接 hook
  */
@@ -39,37 +41,6 @@ function mountWorkInProgressHook() {
 
     return workInProgressHook;
 }
-
-// function updateWorkInProgressHook() {
-//     const current = currentlyRenderingFiber.alternate;
-//     // 更新阶段
-//     if (current !== null) {
-//         currentlyRenderingFiber.memoizedState = current.memoizedState;
-//         if (workInProgressHook !== null) {
-//             // 追加
-//         } else {
-//             // 第一个 hook
-//
-//         }
-//     } else {
-//         // 挂载阶段
-//         const hook: Hook = {
-//             memoizedState: null,
-//             baseState: null,
-//             next: null,
-//         };
-//
-//         if (workInProgressHook !== null) {
-//             // 并非第一个 hook，加到尾部
-//             workInProgressHook = workInProgressHook.next = hook;
-//         } else {
-//             // 第一个 hook，挂到 Fiber 中
-//             workInProgressHook = currentlyRenderingFiber.memoizedState = hook;
-//         }
-//     }
-//
-//     return workInProgressHook;
-// }
 
 /**
  * 创建返回 workInProgressHook，这个函数同时处理 mount 与 update 两个阶段
@@ -156,7 +127,7 @@ function updateWorkInProgressHook() {
 }
 
 function mountReducer<S, I, A>(
-    reducer: (state: S, action: A) => S,
+    reducer: ((state: S, action: A) => S) | null,
     initialArg: I,
     init?: (state: I) => S
 ): [S, Dispatch<A>] {
@@ -181,7 +152,7 @@ function mountReducer<S, I, A>(
 }
 
 function updateReducer<S, I, A>(
-    reducer: (value: S, a: A) => S,
+    reducer: ((value: S, a: A) => S) | null,
     _initialArg: I,
     _init?: (initState: I) => S,
 ): [S, Dispatch<A>] {
@@ -189,6 +160,25 @@ function updateReducer<S, I, A>(
     const dispatch = dispatchReducerAction.bind(null, currentlyRenderingFiber!, hook, reducer as any);
 
     return [hook.memoizedState, dispatch];
+}
+
+function mountState<S>(initialState: (() => S) | S): [S, Dispatch<BaseStateAction<S>>] {
+    const hook = mountWorkInProgressHook();
+    if (typeof initialState === "function") {
+        initialState = (initialState as any)();
+    }
+
+    const dispatch = dispatchSetState.bind(null, currentlyRenderingFiber!, hook);
+
+    return [hook.memoizedState, dispatch];
+}
+
+function updateState<S>(initialState: (() => S) | S): [S, Dispatch<BaseStateAction<S>>] {
+    return updateReducer(baseStateReducer, initialState);
+}
+
+function baseStateReducer<S>(state: S, action: BaseStateAction<S>): S {
+    return typeof action === "function" ? (action as any)(state) : action;
 }
 
 function renderWithHooks<Props, SecondArg>(
@@ -216,6 +206,17 @@ function renderWithHooks<Props, SecondArg>(
     return children;
 }
 
+function dispatchSetState<S>(fiber: Fiber, hook: Hook, action: ((eagerState: S) => S) | S) {
+    hook.memoizedState = typeof action === 'function' ? (action as any)(hook.memoizedState) : action;
+
+    fiber.alternate = { ...fiber };
+
+    const root = getRootForUpdateFiber(fiber);
+    if (root !== null) {
+        scheduleUpdateOnFiber(root, fiber, true);
+    }
+}
+
 function dispatchReducerAction<S, A>(
     fiber: Fiber,
     hook: Hook,
@@ -229,7 +230,7 @@ function dispatchReducerAction<S, A>(
 
     const root = getRootForUpdateFiber(fiber);
     if (root !== null) {
-        scheduleUpdateOnFiber(root, fiber);
+        scheduleUpdateOnFiber(root, fiber, true);
     }
 }
 
@@ -275,12 +276,14 @@ const ContextOnlyDispatcher = {
 
 // mount 阶段所需 hook
 const HooksDispatcherOnMount: Dispatcher = {
-    useReducer: mountReducer
+    useReducer: mountReducer,
+    useState: mountState,
 };
 
 // update 阶段所需 hook
 const HooksDispatcherOnUpdate: Dispatcher = {
-    useReducer: updateReducer
+    useReducer: updateReducer,
+    useState: updateState,
 };
 
 export {

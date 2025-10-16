@@ -3,6 +3,8 @@ import type { Dispatcher } from "react-reconciler";
 
 type Dispatch<A> = (action: A) => void;
 
+type BaseStateAction<S> = ((state: S) => S) | S;
+
 function resolveDispatcher(): Dispatcher {
     const dispatcher = ReactSharedInternals.H;
     if (dispatcher === null) {
@@ -20,29 +22,20 @@ function resolveDispatcher(): Dispatcher {
 }
 
 function useReducer<S, I, A>(
-    reducer: (state: S, action: A) => S,
+    reducer: ((state: S, action: A) => S) | null,
     initialArg: I,
     init?: (initialState: I) => S,
 ): [S, Dispatch<A>] {
     const dispatcher = resolveDispatcher();
     return dispatcher.useReducer(reducer, initialArg, init);
+}
 
-    // let initialState: S;
-    // if (init !== undefined) {
-    //     initialState = init(initialArg);
-    // } else {
-    //     initialState = initialArg as unknown as S;
-    // }
-    //
-    // const dispatch = (action: A) => {
-    //     // scheduleUpdateOnFiber
-    //     const newState = reducer(initialState, action);
-    //     console.log("New state", newState);
-    // };
-    //
-    // return [initialState, dispatch];
+function useState<S>(initialState: (() => S) | S): [S, Dispatch<BaseStateAction<S>>] {
+    const init: S = typeof initialState === "function" ? (initialState as any)() : initialState;
+    return useReducer(null, init);
 }
 
 export {
     useReducer,
+    useState
 };

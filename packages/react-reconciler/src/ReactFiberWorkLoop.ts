@@ -24,7 +24,7 @@ let workInProgressRoot: FiberRoot | null = null;
  * scheduleUpdateOnFiber 函数在 React 中被多次调用
  * 它是告知 React 进行渲染的途径。该函数当组件状态改变（setState、useState）或 props 变化时被调用
  */
-export function scheduleUpdateOnFiber(root: FiberRoot, fiber: Fiber) {
+export function scheduleUpdateOnFiber(root: FiberRoot, fiber: Fiber, isSync?: boolean) {
     // 将 root 标记为已更新
     // 这个过程，会将 updateLane 添加到 root 的属性中：pendingLanes，它指的是挂起的 root's work
     // scheduleUpdateOnFiber();
@@ -32,12 +32,13 @@ export function scheduleUpdateOnFiber(root: FiberRoot, fiber: Fiber) {
     workInProgress = fiber;
     workInProgressRoot = root;
 
-    // 源码中在此之前会有一判断，用于判断的更新类型。此处默认为正常更新，跳过前面步骤，走到下面函数
-    ensureRootIsScheduled(root, getCurrentTime());
-
-    // 必定不会触发的代码
-    if (workInProgressRoot !== window as unknown as any) {
-        // console.log(root);
+    if (isSync) {
+        queueMicrotask(() => performConcurrentWorkOnRoot(root));
+    } else {
+        ensureRootIsScheduled(root, getCurrentTime());
+        if (workInProgressRoot) {
+            // not thing
+        }
     }
 }
 

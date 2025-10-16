@@ -83,10 +83,14 @@ export type FiberRoot = {
 }
 
 type Dispatch<A> = (action: A) => void;
+
+type BaseStateAction<S> = (() => S) | S;
+
 export type Dispatcher = {
     useReducer<S, I, A>(
-        reducer: (state: S, action: A) => S,
+        reducer: ((state: S, action: A) => S) | null,
         initialArg: I,
         init?: (initState: I) => S
     ): [S, Dispatch<A>];
+    useState<S>(initialState: (() => S) | S): [S, Dispatch<BaseStateAction<S>>]
 }

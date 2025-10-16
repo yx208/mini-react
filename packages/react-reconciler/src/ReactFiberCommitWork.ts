@@ -163,7 +163,7 @@ function getHostSibling(fiber: Fiber): HTMLElement | null {
         }
 
         // 过了上面的 while 意味着这是一个有 DOM 节点的 fiber
-        // 当然，他也不能是一个将要移动的 Fiber
+        // 也不能是一个不稳定的 Fiber
         if (!(node.flags & Placement)) {
             return node.stateNode;
         }

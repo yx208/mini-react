@@ -216,16 +216,13 @@ function ChildReconciler(shouldTrackSideEffects: boolean): ReconcilerFn {
     }
 
     /**
-     * 对于子元素是 ReactElement；返回一个有效的 Fiber 节点；无论是复用或创建。
+     * 尝试复用节点，如果 element 没有对应的 current fiber，则无法复用，创建一个新的 fiber
      *
      * 进到这个函数的情况下说明相同位置下 key 一致，那么有以下情况。
-     *
-     * 1 相同位置下 key 一致且‘有’ current fiber，并且类型也相同，那么直接复用；即 div -> div，完美条件。
-     *
-     * 2 相同位置下 key 一致且‘有’ current fiber，但类型不一致那么创建一个新的 fiber
+     * 1. 相同位置下 key 一致且‘有’ current fiber，并且类型也相同，那么直接复用；即 div -> div，完美条件。
+     * 2. 相同位置下 key 一致且‘有’ current fiber，但类型不一致那么创建一个新的 fiber
      *      即：{<div> div ... </div>} -> {<div> span ... </div>}
-     *
-     * 3 相同位置下 key 一致但‘没有’ current fiber
+     * 3. 相同位置下 key 一致但‘没有’ current fiber
      */
     function updateElement(returnFiber: Fiber, current: Fiber | null, element: ReactElement): Fiber {
         if (current !== null) {
@@ -245,7 +242,10 @@ function ChildReconciler(shouldTrackSideEffects: boolean): ReconcilerFn {
     }
 
     /**
-     * @return - 返回 null 表示无法复用
+     * 返回 null 的几个情况
+     * 1. 新的节点是文本节点，但老的节点不是文本节点
+     * 2. 不是有效对象（true、null、undefined...）
+     * 3. 新老节点 key 不匹配
      */
     function updateSlot(returnFiber: Fiber, oldFiber: Fiber | null, newChild: any): Fiber | null {
         // 如果键匹配则更新 Fiber，否则返回 null
@@ -253,8 +253,7 @@ function ChildReconciler(shouldTrackSideEffects: boolean): ReconcilerFn {
         const oldKey = oldFiber !== null ? oldFiber.key : null;
         // 新节点是文本子节点
         if (isNotEmptyString(newChild) || isNumber(newChild)) {
-            // 文本节点没有 key，如果前一个节点隐含 key 值，即使它不是文本节点，我们也可以继续替换它，而不会中止
-            // 即：新节点是文本，老节点不是文本节点
+            // 新节点是文本，老节点不是文本节点（文本节点没有 key）
             if (oldKey !== null) {
                 return null;
             }
@@ -268,7 +267,6 @@ function ChildReconciler(shouldTrackSideEffects: boolean): ReconcilerFn {
             if (newChild.key === oldKey) {
                 return updateElement(returnFiber, oldFiber, newChild);
             } else {
-                debugger;
                 // key 不相同不能复用
                 return null;
             }
